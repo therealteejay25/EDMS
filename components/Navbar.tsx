@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import React, { useEffect, useState } from "react";
 
 function IconDocs() {
@@ -23,6 +24,8 @@ function IconDocs() {
 
 export default function Navbar() {
   const [role, setRole] = useState<string>("Admin");
+  const [user, setUser] = useState<any>(null);
+  const router = useRouter();
 
   useEffect(() => {
     const stored =
@@ -36,12 +39,31 @@ export default function Navbar() {
 
   const showApprovals = role === "Admin";
 
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const API = process.env.NEXT_PUBLIC_API_URL || "";
+        const res = await fetch(`${API}/api/auth/me`, {
+          credentials: "include",
+        });
+        if (!res.ok) {
+          return;
+        }
+        const json = await res.json();
+        setUser(json.user);
+      } catch (e) {
+        // ignore
+      }
+    };
+    load();
+  }, []);
+
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4">
         <div className="flex items-center gap-4">
           <div className="text-sky-600 text-lg font-semibold">Zentra</div>
-          <nav className="hidden gap-3 md:hidden">
+          <nav className="hidden md:flex gap-3">
             <Link
               className="inline-flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-zinc-100"
               href="/dashboard"
@@ -75,28 +97,31 @@ export default function Navbar() {
         <div className="flex items-center gap-4">
           <div className="hidden items-center gap-2 rounded-md bg-zinc-50 px-3 py-2 text-sm md:flex">
             Signed in as{" "}
-            <span className="ml-2 font-medium">admin@example.com</span>
+            <span className="ml-2 font-medium">{user?.name ?? "Guest"}</span>
           </div>
 
           <label className="flex items-center gap-2 rounded-md bg-zinc-50 px-3 py-2 text-sm">
             <span className="text-xs text-zinc-500">Role</span>
-            <select
-              className="ml-2 text-sm bg-transparent"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-            >
-              <option>Admin</option>
-              <option>User</option>
-              <option>Viewer</option>
-            </select>
+            <span className="text-xs text-zinc-500">{user?.role ?? role}</span>
           </label>
 
-          <Link
-            href="/login"
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const API = process.env.NEXT_PUBLIC_API_URL || "";
+                await fetch(`${API}/api/auth/logout`, {
+                  credentials: "include",
+                });
+              } catch (e) {
+                // ignore
+              }
+              router.push("/login");
+            }}
             className="rounded-md bg-rose-600 px-3 py-2 text-sm text-white hover:bg-rose-700"
           >
             Sign out
-          </Link>
+          </button>
         </div>
       </div>
     </header>

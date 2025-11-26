@@ -81,7 +81,7 @@ export default function DocumentDetails() {
           <h3 className="text-lg font-medium">Preview</h3>
           <div className="mt-4 h-96 w-full rounded-md border border-zinc-200 bg-zinc-50 p-4 text-center text-sm text-zinc-500">
             {doc.fileUrl ? (
-              <iframe src={doc.fileUrl} className="h-full w-full" />
+              <iframe src={`https://workdrive.zoho.com/api/v1/${doc.fileUrl}`} className="h-full w-full" />
             ) : (
               <div>PDF preview (not available)</div>
             )}

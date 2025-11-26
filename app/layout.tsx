@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
@@ -20,9 +19,9 @@ export default function RootLayout({
         className={`antialiased bg-zinc-50 text-zinc-900`}
       >
         <Navbar />
-        <div className="mx-auto flex max-w-7xl gap-6 p-6 md:p-10">
+        <div className="mx-auto flex h-screen overflow-hidden gap-6">
           <Sidebar />
-          <main className="min-h-[calc(100vh-64px)] w-full">{children}</main>
+          <main className="min-h-[calc(100vh-64px)] p-6 md:p-10 w-full">{children}</main>
         </div>
       </body>
     </html>
