@@ -23,22 +23,10 @@ function IconDocs() {
 }
 
 export default function Navbar() {
-  const [role, setRole] = useState<string>("Admin");
   const [user, setUser] = useState<any>(null);
   const router = useRouter();
 
-  useEffect(() => {
-    const stored =
-      typeof window !== "undefined" ? localStorage.getItem("edms:role") : null;
-    if (stored) setRole(stored);
-  }, []);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") localStorage.setItem("edms:role", role);
-  }, [role]);
-
-  const showApprovals = role === "Admin";
-
+  
   useEffect(() => {
     const load = async () => {
       try {
@@ -57,6 +45,9 @@ export default function Navbar() {
     };
     load();
   }, []);
+
+  const role = user?.role ?? "User";
+  const showApprovals = role === "Admin";
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-zinc-100 bg-white">
