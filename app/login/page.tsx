@@ -14,8 +14,9 @@ export default function LoginPage() {
     // check session with backend
     const check = async () => {
       try {
-        const API = process.env.NEXT_PUBLIC_API_URL || "";
-        const res = await fetch(`${API}/api/auth/me`, {
+        const API =
+          process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+        const res = await fetch(`${API}/auth/me`, {
           credentials: "include",
         });
         if (res.ok) router.push("/dashboard");
@@ -27,21 +28,21 @@ export default function LoginPage() {
   }, [router]);
 
   function startZoho() {
-    const API = process.env.NEXT_PUBLIC_API_URL || "";
-    window.location.assign(`${API}/api/auth/zoho/start`);
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+    window.location.assign(`${API}/auth/zoho/start`);
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50">
+    <div className="flex min-h-screen items-center justify-center">
       <Card className="w-full max-w-md">
-        <h2 className="mb-4 text-2xl font-semibold">Sign in to EDMS</h2>
-        <div className="flex flex-col gap-4">
+        <h2 className="mb-2 text-2xl font-semibold">Sign in to EDMS</h2>
+        <div className="flex flex-col gap-8">
           <div className="text-sm text-zinc-600">
             Sign in using Zoho SSO for your organization.
           </div>
           {error ? <div className="text-sm text-rose-600">{error}</div> : null}
-          <div className="flex justify-end">
-            <Button onClick={startZoho}>Sign in with Zoho</Button>
+          <div className="flex w-full">
+            <Button className="bg-orange-500 py-3.5 w-full" onClick={startZoho}>Sign in with Zoho</Button>
           </div>
         </div>
       </Card>

@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "../components/ThemeProvider";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
 
 export const metadata: Metadata = {
-  title: "EDMS — Admin",
-  description: "Electronic Document Management System - UI (static)",
+  title: "EDMS — Electronic Document Management System",
+  description: "Production-ready Electronic Document Management System",
 };
 
 export default function RootLayout({
@@ -14,15 +15,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body
-        className={`antialiased bg-zinc-50 text-zinc-900`}
-      >
-        <Navbar />
-        <div className="mx-auto flex h-screen overflow-hidden gap-6">
-          <Sidebar />
-          <main className="min-h-[calc(100vh-64px)] p-6 md:p-10 w-full">{children}</main>
-        </div>
+    <html lang="en" suppressHydrationWarning>
+      <body className="antialiased bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 transition-colors">
+      <ThemeProvider>
+          <div className="flex h-screen overflow-hidden">
+            <Sidebar />
+            <div className="flex flex-col flex-1 overflow-hidden">
+              <Navbar />
+              <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                {children}
+              </main>
+            </div>
+          </div>
+    </ThemeProvider>
       </body>
     </html>
   );

@@ -1,12 +1,18 @@
 import React from "react";
 
-type InputProps = React.InputHTMLAttributes<HTMLInputElement> & {
+type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & {
   label?: string;
   error?: string;
   helperText?: string;
 };
 
-export default function Input({ label, error, helperText, className = "", ...props }: InputProps) {
+export default function Textarea({
+  label,
+  error,
+  helperText,
+  className = "",
+  ...props
+}: TextareaProps) {
   return (
     <label className="flex w-full flex-col gap-2 text-sm">
       {label && (
@@ -15,12 +21,12 @@ export default function Input({ label, error, helperText, className = "", ...pro
           {props.required && <span className="text-red-500 ml-1">*</span>}
         </span>
       )}
-      <input
+      <textarea
         className={`w-full rounded-lg border ${
           error
             ? "border-red-300 dark:border-red-700"
             : "border-zinc-300 dark:border-zinc-700"
-        } bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 shadow-sm focus:border-primary-500 dark:focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-900/50 focus:outline-none transition-colors ${className}`}
+        } bg-white dark:bg-zinc-800 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-100 placeholder-zinc-400 dark:placeholder-zinc-500 shadow-sm focus:border-primary-500 dark:focus:border-primary-500 focus:ring-2 focus:ring-primary-200 dark:focus:ring-primary-900/50 focus:outline-none transition-colors resize-y min-h-[100px] ${className}`}
         {...props}
       />
       {error && (
@@ -32,3 +38,5 @@ export default function Input({ label, error, helperText, className = "", ...pro
     </label>
   );
 }
+
+

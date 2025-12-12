@@ -12,15 +12,11 @@ export default function CommentSection({ docId }: { docId: string }) {
   useEffect(() => {
     const load = async () => {
       try {
-        const API = process.env.NEXT_PUBLIC_API_URL || "";
-        const res = await fetch(`${API}/api/documents/${docId}`, {
-          credentials: "include",
-        });
-        if (!res.ok) return;
-        const json = await res.json();
-        setAllComments(json.doc?.comments || []);
+        const { getDocument } = await import("@/lib/apiClient");
+        const result = await getDocument(docId);
+        setAllComments(result.doc?.comments || []);
       } catch (err) {
-        // ignore
+        console.warn("Failed to load comments:", err);
       }
     };
     load();
@@ -30,30 +26,15 @@ export default function CommentSection({ docId }: { docId: string }) {
     e?.preventDefault();
     if (!text.trim()) return;
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL || "";
-      const res = await fetch(`${API}/api/documents/${docId}/comment`, {
-        method: "POST",
-        credentials: "include",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ comment: text }),
-      });
-      if (!res.ok) throw new Error("Failed");
-      // reload comments
-      const json = await res.json().catch(() => null);
-      // optimistic update: push new comment locally
-      setAllComments((s) => [
-        {
-          userId: "me",
-          name: author || "Me",
-          comment: text,
-          createdAt: new Date().toISOString(),
-        } as any,
-        ...s,
-      ]);
+      const { addDocumentComment, getDocument } = await import("@/lib/apiClient");
+      await addDocumentComment(docId, text);
+      // Reload comments from server
+      const result = await getDocument(docId);
+      setAllComments(result.doc?.comments || []);
       setText("");
       setAuthor("");
     } catch (err) {
-      alert("Failed to add comment");
+      alert("Failed to add comment: " + (err instanceof Error ? err.message : "Unknown error"));
     }
   };
 
@@ -88,16 +69,16 @@ export default function CommentSection({ docId }: { docId: string }) {
       </form>
 
       <div className="space-y-3">
-        {allComments.map((c) => (
+        {allComments.map((c: any, idx: number) => (
           <div
-            key={c.id}
+            key={c._id || idx}
             className="rounded-md border border-zinc-100 bg-white p-3"
           >
             <div className="flex items-center justify-between">
-              <div className="text-sm font-medium">{c.author}</div>
-              <div className="text-xs text-zinc-500">{c.date}</div>
+              <div className="text-sm font-medium">{c.name || c.author || "Anonymous"}</div>
+              <div className="text-xs text-zinc-500">{c.date || new Date(c.createdAt).toLocaleString()}</div>
             </div>
-            <div className="mt-2 text-sm text-zinc-700">{c.text}</div>
+            <div className="mt-2 text-sm text-zinc-700">{c.comment || c.text}</div>
           </div>
         ))}
       </div>
