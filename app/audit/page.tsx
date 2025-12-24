@@ -15,9 +15,10 @@ export default function AuditPage() {
       try {
         setLoading(true);
         const result = await listAuditLogs({ page });
-        setLogs(result.data);
+        setLogs(Array.isArray(result?.data) ? result.data : []);
       } catch (err) {
         console.error("Failed to load audit logs:", err);
+        setLogs([]); // Ensure logs is an array even on error
       } finally {
         setLoading(false);
       }

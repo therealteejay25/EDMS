@@ -4,29 +4,118 @@ import React, { useEffect, useState } from "react";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
+import Input from "../../components/Input";
+import Select from "../../components/Select";
+import { listUsers, createUser, updateUser, deleteUser, User } from "../../lib/userService";
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+const DEPARTMENTS = [
+  { value: "", label: "No Department" },
+  { value: "HR", label: "Human Resources" },
+  { value: "Finance", label: "Finance" },
+  { value: "Legal", label: "Legal" },
+  { value: "IT", label: "Information Technology" },
+  { value: "Operations", label: "Operations" },
+  { value: "Sales", label: "Sales" },
+  { value: "Marketing", label: "Marketing" },
+  { value: "General", label: "General" },
+];
+
+const ROLES = [
+  { value: "user", label: "User" },
+  { value: "department_lead", label: "Department Lead" },
+  { value: "admin", label: "Administrator" },
+];
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    role: "user",
+    department: "",
+    password: "",
+  });
+
+  const loadUsers = async () => {
+    try {
+      setLoading(true);
+      const data = await listUsers();
+      setUsers(data);
+    } catch (err) {
+      console.error("Failed to load users:", err);
+      alert("Failed to load users");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const load = async () => {
-      try {
-        const res = await fetch(`${API_URL}/users`, { credentials: "include" });
-        if (res.ok) {
-          const data = await res.json();
-          setUsers(data.users || data.data || []);
-        }
-      } catch (err) {
-        console.error("Failed to load users:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
+    loadUsers();
   }, []);
+
+  const handleOpenModal = (user?: User) => {
+    if (user) {
+      setEditingUser(user);
+      setFormData({
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        department: user.department || "",
+        password: "",
+      });
+    } else {
+      setEditingUser(null);
+      setFormData({
+        name: "",
+        email: "",
+        role: "user",
+        department: "",
+        password: "",
+      });
+    }
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+    setEditingUser(null);
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      if (editingUser) {
+        await updateUser(editingUser._id, {
+          name: formData.name,
+          email: formData.email,
+          role: formData.role as any,
+          department: formData.department || undefined,
+        });
+        alert("User updated successfully");
+      } else {
+        await createUser(formData);
+        alert("User created successfully");
+      }
+      handleCloseModal();
+      loadUsers();
+    } catch (err: any) {
+      alert(err.message || "Failed to save user");
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this user?")) return;
+    try {
+      await deleteUser(id);
+      alert("User deleted successfully");
+      loadUsers();
+    } catch (err: any) {
+      alert(err.message || "Failed to delete user");
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -37,7 +126,7 @@ export default function UsersPage() {
             Manage users and their access permissions
           </p>
         </div>
-        <Button>Add User</Button>
+        <Button onClick={() => handleOpenModal()}>Add User</Button>
       </div>
 
       <Card padding="none">
@@ -95,8 +184,9 @@ export default function UsersPage() {
                         {user.isActive ? "Active" : "Inactive"}
                       </Badge>
                     </td>
-                    <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="sm">Edit</Button>
+                    <td className="px-6 py-4 text-right space-x-2">
+                      <Button variant="ghost" size="sm" onClick={() => handleOpenModal(user)}>Edit</Button>
+                      <Button variant="ghost" size="sm" onClick={() => handleDelete(user._id)}>Delete</Button>
                     </td>
                   </tr>
                 ))}
@@ -105,6 +195,57 @@ export default function UsersPage() {
           </div>
         )}
       </Card>
+
+      {/* User Modal */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={handleCloseModal}>
+          <div className="bg-white dark:bg-zinc-900 rounded-lg p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-xl font-bold mb-4 text-zinc-900 dark:text-zinc-100">
+              {editingUser ? "Edit User" : "Add New User"}
+            </h2>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Input
+                label="Name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                required
+              />
+              <Input
+                label="Email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                required
+              />
+              <Select
+                label="Role"
+                value={formData.role}
+                onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                options={ROLES}
+              />
+              <Select
+                label="Department"
+                value={formData.department}
+                onChange={(e) => setFormData({ ...formData, department: e.target.value })}
+                options={DEPARTMENTS}
+              />
+              {!editingUser && (
+                <Input
+                  label="Password (optional)"
+                  type="password"
+                  value={formData.password}
+                  onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                  helperText="If not provided, email will be used as password"
+                />
+              )}
+              <div className="flex justify-end gap-2">
+                <Button type="button" variant="outline" onClick={handleCloseModal}>Cancel</Button>
+                <Button type="submit">{editingUser ? "Update" : "Create"}</Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

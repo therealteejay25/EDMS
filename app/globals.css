@@ -9,6 +9,10 @@
   font-family: "Onest";
 }
 
+@theme {
+  --color-primary: #f97316;
+}
+
 .container {
   max-width: 1200px;
   margin: 0 auto;

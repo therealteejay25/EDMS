@@ -18,22 +18,12 @@ export default function ExpiringPage() {
     const load = async () => {
       try {
         // Load expiring documents from API
-        const res = await fetch(`${API_URL}/expiry/soon`, {
+        const res = await fetch(`${API_URL}/expiry`, {
           credentials: "include",
         });
         if (res.ok) {
           const data = await res.json();
-          setDocuments(data.documents || []);
-        } else {
-          // Fallback: filter documents with expiry dates
-          const result = await listDocuments({ limit: 100 });
-          const expiring = (result.data || []).filter(
-            (doc) =>
-              doc.expiryDate &&
-              new Date(doc.expiryDate) <=
-                new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-          );
-          setDocuments(expiring);
+          setDocuments(data.documents || data.data || []);
         }
       } catch (err) {
         console.error("Failed to load expiring documents:", err);

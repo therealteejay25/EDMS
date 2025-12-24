@@ -169,7 +169,7 @@ export default function DocumentsPage() {
             />
           </div>
           <div className="flex items-center gap-3">
-            <Button onClick={handleSearch}>Search</Button>
+            <Button variant="primary" onClick={handleSearch}>Search</Button>
             <Button variant="outline" onClick={handleReset}>
               Reset
             </Button>

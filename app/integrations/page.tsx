@@ -1,37 +1,106 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
+import Input from "../../components/Input";
 
-const integrations = [
-  { id: "zoho-workdrive", name: "Zoho WorkDrive", status: "connected", description: "Cloud storage integration" },
-  { id: "zoho-sign", name: "Zoho Sign", status: "available", description: "E-signature integration" },
-  { id: "zoho-cliq", name: "Zoho Cliq", status: "available", description: "Notifications and alerts" },
-  { id: "microsoft-365", name: "Microsoft 365", status: "disconnected", description: "SharePoint and OneDrive integration" },
-  { id: "google-drive", name: "Google Drive", status: "disconnected", description: "Google Drive integration" },
-  { id: "slack", name: "Slack", status: "disconnected", description: "Slack notifications" },
-];
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+
+interface Organization {
+  _id: string;
+  name: string;
+  zoho?: {
+    enabled?: boolean;
+    creatorFormId?: string;
+    webhookUrl?: string;
+    workdriveFolderId?: string;
+    signTemplateId?: string;
+  };
+}
 
 export default function IntegrationsPage() {
-  const [connecting, setConnecting] = useState<string | null>(null);
+  const [org, setOrg] = useState<Organization | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editingZoho, setEditingZoho] = useState(false);
+  const [zohoSettings, setZohoSettings] = useState({
+    enabled: false,
+    creatorFormId: "",
+    webhookUrl: "",
+    workdriveFolderId: "",
+    signTemplateId: "",
+  });
 
-  const handleConnect = async (id: string) => {
-    setConnecting(id);
-    // Simulate connection
-    setTimeout(() => {
-      setConnecting(null);
-    }, 2000);
-  };
+  useEffect(() => {
+    loadOrganization();
+  }, []);
 
-  const getStatusVariant = (status: string) => {
-    switch (status) {
-      case "connected": return "success";
-      case "available": return "default";
-      default: return "default";
+  const loadOrganization = async () => {
+    try {
+      setLoading(true);
+      // Get current user to find org ID
+      const userRes = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
+      if (!userRes.ok) throw new Error("Failed to get user");
+      const userData = await userRes.json();
+      const user = userData.user || userData;
+
+      // Get organization details
+      const orgRes = await fetch(`${API_URL}/org/${user.org}`, { credentials: "include" });
+      if (!orgRes.ok) throw new Error("Failed to get organization");
+      const orgData = await orgRes.json();
+      const organization = orgData.org || orgData;
+      
+      setOrg(organization);
+      setZohoSettings({
+        enabled: organization.zoho?.enabled || false,
+        creatorFormId: organization.zoho?.creatorFormId || "",
+        webhookUrl: organization.zoho?.webhookUrl || "",
+        workdriveFolderId: organization.zoho?.workdriveFolderId || "",
+        signTemplateId: organization.zoho?.signTemplateId || "",
+      });
+    } catch (err) {
+      console.error("Failed to load organization:", err);
+      alert("Failed to load organization settings");
+    } finally {
+      setLoading(false);
     }
   };
+
+  const handleSaveZoho = async () => {
+    if (!org) return;
+    try {
+      setSaving(true);
+      const res = await fetch(`${API_URL}/org/${org._id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ zoho: zohoSettings }),
+      });
+      
+      if (!res.ok) throw new Error("Failed to update settings");
+      
+      alert("Zoho settings updated successfully");
+      setEditingZoho(false);
+      loadOrganization();
+    } catch (err: any) {
+      alert(err.message || "Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <div className="loader"></div>
+          <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">Loading integrations...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -42,40 +111,158 @@ export default function IntegrationsPage() {
         </p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
-        {integrations.map((integration) => (
-          <Card key={integration.id}>
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <div className="flex items-center gap-3 mb-2">
-                  <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
-                    {integration.name}
-                  </h3>
-                  <Badge variant={getStatusVariant(integration.status)}>
-                    {integration.status}
-                  </Badge>
-                </div>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                  {integration.description}
-                </p>
+      {/* Zoho Integration Card */}
+      <Card>
+        <div className="space-y-4">
+          <div className="flex items-start justify-between">
+            <div className="flex-1">
+              <div className="flex items-center gap-3 mb-2">
+                <h3 className="text-lg font-semibold text-zinc-900 dark:text-zinc-100">
+                  Zoho Integration
+                </h3>
+                <Badge variant={zohoSettings.enabled ? "success" : "default"}>
+                  {zohoSettings.enabled ? "Connected" : "Disconnected"}
+                </Badge>
               </div>
-              <div className="ml-4">
-                {integration.status === "connected" ? (
-                  <Button variant="outline" size="sm">Disconnect</Button>
-                ) : (
-                  <Button
-                    size="sm"
-                    onClick={() => handleConnect(integration.id)}
-                    disabled={connecting === integration.id}
-                  >
-                    {connecting === integration.id ? "Connecting..." : "Connect"}
-                  </Button>
-                )}
+              <p className="text-sm text-zinc-600 dark:text-zinc-400">
+                Connect Zoho Creator, WorkDrive, and Sign for seamless document workflows
+              </p>
+            </div>
+            <Button
+              size="sm"
+              variant={editingZoho ? "outline" : "primary"}
+              onClick={() => setEditingZoho(!editingZoho)}
+            >
+              {editingZoho ? "Cancel" : "Configure"}
+            </Button>
+          </div>
+
+          {editingZoho && (
+            <div className="space-y-4 border-t pt-4">
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={zohoSettings.enabled}
+                  onChange={(e) =>
+                    setZohoSettings({ ...zohoSettings, enabled: e.target.checked })
+                  }
+                  className="w-4 h-4"
+                />
+                <label className="text-sm font-medium">Enable Zoho Integration</label>
+              </div>
+
+              <Input
+                label="Creator Form ID"
+                value={zohoSettings.creatorFormId}
+                onChange={(e) =>
+                  setZohoSettings({ ...zohoSettings, creatorFormId: e.target.value })
+                }
+                placeholder="e.g., app-name/form-name"
+                helperText="Format: {appName}/{formName}"
+              />
+
+              <Input
+                label="WorkDrive Folder ID"
+                value={zohoSettings.workdriveFolderId}
+                onChange={(e) =>
+                  setZohoSettings({ ...zohoSettings, workdriveFolderId: e.target.value })
+                }
+                placeholder="Folder ID from Zoho WorkDrive"
+              />
+
+              <Input
+                label="Webhook URL"
+                value={zohoSettings.webhookUrl}
+                onChange={(e) =>
+                  setZohoSettings({ ...zohoSettings, webhookUrl: e.target.value })
+                }
+                placeholder="https://your-webhook-url.com"
+                helperText="Notifications for document uploads and approvals"
+              />
+
+              <Input
+                label="Sign Template ID"
+                value={zohoSettings.signTemplateId}
+                onChange={(e) =>
+                  setZohoSettings({ ...zohoSettings, signTemplateId: e.target.value })
+                }
+                placeholder="Template ID from Zoho Sign"
+              />
+
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setEditingZoho(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveZoho} disabled={saving}>
+                  {saving ? "Saving..." : "Save Settings"}
+                </Button>
               </div>
             </div>
-          </Card>
-        ))}
-      </div>
+          )}
+
+          {!editingZoho && zohoSettings.enabled && (
+            <div className="space-y-2 text-sm border-t pt-4">
+              <div className="flex justify-between">
+                <span className="text-zinc-600 dark:text-zinc-400">Creator Form:</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  {zohoSettings.creatorFormId || "Not configured"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-600 dark:text-zinc-400">WorkDrive Folder:</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  {zohoSettings.workdriveFolderId || "Not configured"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-600 dark:text-zinc-400">Webhook URL:</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100 truncate max-w-xs">
+                  {zohoSettings.webhookUrl || "Not configured"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-zinc-600 dark:text-zinc-400">Sign Template:</span>
+                <span className="font-medium text-zinc-900 dark:text-zinc-100">
+                  {zohoSettings.signTemplateId || "Not configured"}
+                </span>
+              </div>
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Integration Status */}
+      <Card>
+        <h3 className="text-lg font-semibold mb-4 text-zinc-900 dark:text-zinc-100">
+          Zoho Services Status
+        </h3>
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-700 dark:text-zinc-300">Zoho Creator</span>
+            <Badge variant={zohoSettings.creatorFormId ? "success" : "default"}>
+              {zohoSettings.creatorFormId ? "Configured" : "Not Configured"}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-700 dark:text-zinc-300">Zoho WorkDrive</span>
+            <Badge variant={zohoSettings.workdriveFolderId ? "success" : "default"}>
+              {zohoSettings.workdriveFolderId ? "Configured" : "Not Configured"}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-700 dark:text-zinc-300">Zoho Sign</span>
+            <Badge variant={zohoSettings.signTemplateId ? "success" : "default"}>
+              {zohoSettings.signTemplateId ? "Configured" : "Not Configured"}
+            </Badge>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-zinc-700 dark:text-zinc-300">Webhook Notifications</span>
+            <Badge variant={zohoSettings.webhookUrl ? "success" : "default"}>
+              {zohoSettings.webhookUrl ? "Configured" : "Not Configured"}
+            </Badge>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }

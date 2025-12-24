@@ -45,8 +45,10 @@ export default function OrgSettingsPage() {
   const loadWorkflows = async () => {
     try {
       const data = await listWorkflows();
-      setWorkflows(data);
+      setWorkflows(Array.isArray(data) ? data : []);
     } catch (error) {
+      console.error("Failed to load workflows:", error);
+      setWorkflows([]); // Ensure it's always an array
       alert("Failed to load workflows");
     }
   };
@@ -54,8 +56,10 @@ export default function OrgSettingsPage() {
   const loadAuditLogs = async () => {
     try {
       const data = await listAuditLogs();
-      setAuditLogs(data.data);
+      setAuditLogs(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {
+      console.error("Failed to load audit logs:", error);
+      setAuditLogs([]); // Ensure it's always an array
       alert("Failed to load audit logs");
     }
   };
@@ -74,16 +78,17 @@ export default function OrgSettingsPage() {
     try {
       await createWorkflow({
         ...newWorkflow,
+        trigger: newWorkflow.trigger as "document_type" | "department" | "manual",
         steps: [
           {
             order: 1,
             approvers: [],
-            action: "approve",
+            action: "approve" as const,
             dueInDays: 3,
           },
         ],
         enabled: true,
-      });
+      } as Omit<Workflow, "_id" | "createdAt">);
       alert("Workflow created!");
       setNewWorkflow({ name: "", trigger: "document_type", triggerValue: "" });
       loadWorkflows();
@@ -221,7 +226,7 @@ export default function OrgSettingsPage() {
                       </p>
                     </div>
                     <Button
-                      variant="destructive"
+                      variant="danger"
                       onClick={() => handleDeleteWorkflow(wf._id)}
                     >
                       Delete
