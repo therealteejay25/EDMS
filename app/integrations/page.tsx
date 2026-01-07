@@ -5,8 +5,13 @@ import Card from "../../components/Card";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
 import Input from "../../components/Input";
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
+import { useModal } from "../../components/ModalProvider";
+import {
+  getOrg,
+  updateOrg,
+  getZohoIntegrationStatus,
+  ZohoIntegrationStatus,
+} from "../../lib/apiClient";
 
 interface Organization {
   _id: string;
@@ -21,10 +26,12 @@ interface Organization {
 }
 
 export default function IntegrationsPage() {
+  const { alert } = useModal();
   const [org, setOrg] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingZoho, setEditingZoho] = useState(false);
+  const [status, setStatus] = useState<ZohoIntegrationStatus | null>(null);
   const [zohoSettings, setZohoSettings] = useState({
     enabled: false,
     creatorFormId: "",
@@ -40,17 +47,7 @@ export default function IntegrationsPage() {
   const loadOrganization = async () => {
     try {
       setLoading(true);
-      // Get current user to find org ID
-      const userRes = await fetch(`${API_URL}/auth/me`, { credentials: "include" });
-      if (!userRes.ok) throw new Error("Failed to get user");
-      const userData = await userRes.json();
-      const user = userData.user || userData;
-
-      // Get organization details
-      const orgRes = await fetch(`${API_URL}/org/${user.org}`, { credentials: "include" });
-      if (!orgRes.ok) throw new Error("Failed to get organization");
-      const orgData = await orgRes.json();
-      const organization = orgData.org || orgData;
+      const organization: any = await getOrg();
       
       setOrg(organization);
       setZohoSettings({
@@ -60,9 +57,16 @@ export default function IntegrationsPage() {
         workdriveFolderId: organization.zoho?.workdriveFolderId || "",
         signTemplateId: organization.zoho?.signTemplateId || "",
       });
+
+      try {
+        const s = await getZohoIntegrationStatus();
+        setStatus(s);
+      } catch (e) {
+        setStatus(null);
+      }
     } catch (err) {
       console.error("Failed to load organization:", err);
-      alert("Failed to load organization settings");
+      await alert("Failed to load organization settings", { title: "Error" });
     } finally {
       setLoading(false);
     }
@@ -72,20 +76,13 @@ export default function IntegrationsPage() {
     if (!org) return;
     try {
       setSaving(true);
-      const res = await fetch(`${API_URL}/org/${org._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ zoho: zohoSettings }),
-      });
+      await updateOrg({ zoho: zohoSettings } as any);
       
-      if (!res.ok) throw new Error("Failed to update settings");
-      
-      alert("Zoho settings updated successfully");
+      await alert("Zoho settings updated successfully", { title: "Success" });
       setEditingZoho(false);
       loadOrganization();
     } catch (err: any) {
-      alert(err.message || "Failed to save settings");
+      await alert(err.message || "Failed to save settings", { title: "Error" });
     } finally {
       setSaving(false);
     }
@@ -193,8 +190,8 @@ export default function IntegrationsPage() {
                 <Button variant="outline" onClick={() => setEditingZoho(false)}>
                   Cancel
                 </Button>
-                <Button onClick={handleSaveZoho} disabled={saving}>
-                  {saving ? "Saving..." : "Save Settings"}
+                <Button onClick={handleSaveZoho} loading={saving} loadingText="Saving...">
+                  Save Settings
                 </Button>
               </div>
             </div>
@@ -239,25 +236,25 @@ export default function IntegrationsPage() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-sm text-zinc-700 dark:text-zinc-300">Zoho Creator</span>
-            <Badge variant={zohoSettings.creatorFormId ? "success" : "default"}>
+            <Badge variant={status?.enabled && zohoSettings.creatorFormId ? "success" : "default"}>
               {zohoSettings.creatorFormId ? "Configured" : "Not Configured"}
             </Badge>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-zinc-700 dark:text-zinc-300">Zoho WorkDrive</span>
-            <Badge variant={zohoSettings.workdriveFolderId ? "success" : "default"}>
+            <Badge variant={status?.enabled && status?.hasWorkDriveFolder ? "success" : "default"}>
               {zohoSettings.workdriveFolderId ? "Configured" : "Not Configured"}
             </Badge>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-zinc-700 dark:text-zinc-300">Zoho Sign</span>
-            <Badge variant={zohoSettings.signTemplateId ? "success" : "default"}>
+            <Badge variant={status?.enabled && status?.hasSignTemplate ? "success" : "default"}>
               {zohoSettings.signTemplateId ? "Configured" : "Not Configured"}
             </Badge>
           </div>
           <div className="flex items-center justify-between">
             <span className="text-sm text-zinc-700 dark:text-zinc-300">Webhook Notifications</span>
-            <Badge variant={zohoSettings.webhookUrl ? "success" : "default"}>
+            <Badge variant={status?.enabled && status?.hasWebhookUrl ? "success" : "default"}>
               {zohoSettings.webhookUrl ? "Configured" : "Not Configured"}
             </Badge>
           </div>

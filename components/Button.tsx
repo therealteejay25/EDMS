@@ -4,6 +4,8 @@ type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
   variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
   size?: "sm" | "md" | "lg";
   as?: "button" | "span";
+  loading?: boolean;
+  loadingText?: string;
 };
 
 export default function Button({
@@ -13,6 +15,8 @@ export default function Button({
   className = "",
   disabled,
   as: Component = "button",
+  loading = false,
+  loadingText,
   ...props
 }: ButtonProps) {
   const base = "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed";
@@ -31,15 +35,57 @@ export default function Button({
     danger: "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 dark:bg-red-700 dark:hover:bg-red-800",
   };
 
-  const Element = Component as keyof JSX.IntrinsicElements;
+  const isDisabled = disabled || loading;
 
+  const content = (
+    <>
+      {loading ? (
+        <svg
+          className="h-4 w-4 animate-spin"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <circle
+            className="opacity-25"
+            cx="12"
+            cy="12"
+            r="10"
+            stroke="currentColor"
+            strokeWidth="4"
+          />
+          <path
+            className="opacity-75"
+            fill="currentColor"
+            d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+          />
+        </svg>
+      ) : null}
+      {loading ? (loadingText || children) : children}
+    </>
+  );
+
+  if (Component === "span") {
+    const spanProps = props as React.HTMLAttributes<HTMLSpanElement>;
+    return (
+      <span
+        className={`${base} ${sizeClasses[size]} ${variants[variant]} ${className}`}
+        aria-disabled={isDisabled}
+        {...spanProps}
+      >
+        {content}
+      </span>
+    );
+  }
+
+  const buttonProps = props as React.ButtonHTMLAttributes<HTMLButtonElement>;
   return (
-    <Element
+    <button
       className={`${base} ${sizeClasses[size]} ${variants[variant]} ${className}`}
-      disabled={disabled}
-      {...(props as any)}
+      disabled={isDisabled}
+      {...buttonProps}
     >
-      {children}
-    </Element>
+      {content}
+    </button>
   );
 }

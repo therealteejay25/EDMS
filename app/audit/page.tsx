@@ -4,11 +4,14 @@ import React, { useEffect, useState } from "react";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import { listAuditLogs, exportAuditLog, AuditLog, formatDateTime } from "../../lib/apiClient";
+import { useModal } from "../../components/ModalProvider";
 
 export default function AuditPage() {
+  const { alert } = useModal();
   const [logs, setLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
+  const [exporting, setExporting] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -28,6 +31,7 @@ export default function AuditPage() {
 
   const handleExport = async () => {
     try {
+      setExporting(true);
       const blob = await exportAuditLog();
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
@@ -38,7 +42,9 @@ export default function AuditPage() {
       document.body.removeChild(a);
       window.URL.revokeObjectURL(url);
     } catch (err) {
-      alert("Failed to export audit log");
+      await alert("Failed to export audit log", { title: "Error" });
+    } finally {
+      setExporting(false);
     }
   };
 
@@ -51,7 +57,9 @@ export default function AuditPage() {
             Complete audit trail of all system activities
           </p>
         </div>
-        <Button onClick={handleExport}>Export CSV</Button>
+        <Button onClick={handleExport} loading={exporting} loadingText="Exporting...">
+          Export CSV
+        </Button>
       </div>
 
       <Card padding="none">

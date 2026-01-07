@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import Card from "../../components/Card";
 import Badge from "../../components/Badge";
 import Button from "../../components/Button";
+import { useModal } from "../../components/ModalProvider";
 import {
   listApprovals,
   approveDocument,
@@ -24,6 +25,7 @@ interface Approval {
 }
 
 export default function ApprovalsPage() {
+  const { alert, confirm } = useModal();
   const [approvals, setApprovals] = useState<Approval[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<"pending" | "all">("pending");
@@ -39,7 +41,9 @@ export default function ApprovalsPage() {
     } catch (error) {
       console.error("Failed to load approvals:", error);
       setApprovals([]);
-      alert("Failed to load approvals: " + (error?.message || "Unknown error"));
+      await alert("Failed to load approvals: " + (error?.message || "Unknown error"), {
+        title: "Error",
+      });
     } finally {
       setLoading(false);
     }
@@ -53,38 +57,54 @@ export default function ApprovalsPage() {
     setProcessingId(approvalId);
     try {
       await approveDocument(approvalId, comment);
-      alert("Document approved!");
+      await alert("Document approved!", { title: "Success" });
       loadApprovals();
     } catch (error) {
-      alert("Failed to approve: " + (error?.message || "Unknown error"));
+      await alert("Failed to approve: " + (error?.message || "Unknown error"), {
+        title: "Error",
+      });
     } finally {
       setProcessingId(null);
     }
   };
 
   const handleReject = async (approvalId: string) => {
-    if (!confirm("Reject this approval?")) return;
+    const ok = await confirm("Reject this approval?", {
+      title: "Confirm",
+      confirmText: "Reject",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     setProcessingId(approvalId);
     try {
       await rejectDocument(approvalId);
-      alert("Document rejected!");
+      await alert("Document rejected!", { title: "Success" });
       loadApprovals();
     } catch (error) {
-      alert("Failed to reject: " + (error?.message || "Unknown error"));
+      await alert("Failed to reject: " + (error?.message || "Unknown error"), {
+        title: "Error",
+      });
     } finally {
       setProcessingId(null);
     }
   };
 
   const handleEscalate = async (approvalId: string) => {
-    if (!confirm("Escalate this approval to your manager?")) return;
+    const ok = await confirm("Escalate this approval to your manager?", {
+      title: "Confirm",
+      confirmText: "Escalate",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     setProcessingId(approvalId);
     try {
       await escalateApproval(approvalId);
-      alert("Escalated!");
+      await alert("Escalated!", { title: "Success" });
       loadApprovals();
     } catch (error) {
-      alert("Failed to escalate: " + (error?.message || "Unknown error"));
+      await alert("Failed to escalate: " + (error?.message || "Unknown error"), {
+        title: "Error",
+      });
     } finally {
       setProcessingId(null);
     }
@@ -185,6 +205,8 @@ export default function ApprovalsPage() {
                       processingId === approval._id ||
                       approval.status !== "pending"
                     }
+                    loading={processingId === approval._id}
+                    loadingText="Approving..."
                   >
                     Approve
                   </Button>
@@ -195,6 +217,8 @@ export default function ApprovalsPage() {
                       processingId === approval._id ||
                       approval.status !== "pending"
                     }
+                    loading={processingId === approval._id}
+                    loadingText="Rejecting..."
                   >
                     Reject
                   </Button>
@@ -205,6 +229,8 @@ export default function ApprovalsPage() {
                       processingId === approval._id ||
                       approval.status !== "pending"
                     }
+                    loading={processingId === approval._id}
+                    loadingText="Escalating..."
                   >
                     Escalate
                   </Button>

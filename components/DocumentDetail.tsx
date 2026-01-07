@@ -4,6 +4,7 @@ import Card from "./Card";
 import Badge from "./Badge";
 import Button from "./Button";
 import Input from "./Input";
+import { useModal } from "./ModalProvider";
 
 interface Document {
   _id: string;
@@ -50,6 +51,7 @@ export default function DocumentDetail({
   docId,
   onUpdate,
 }: DocumentDetailProps) {
+  const { alert, confirm } = useModal();
   const [doc, setDoc] = useState<Document | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -98,7 +100,7 @@ export default function DocumentDetail({
       setNewComment("");
       loadDocument();
     } catch (err) {
-      alert("Error: " + err.message);
+      await alert("Error: " + err.message, { title: "Error" });
     }
   };
 
@@ -117,12 +119,17 @@ export default function DocumentDetail({
       setNewTag("");
       loadDocument();
     } catch (err) {
-      alert("Error: " + err.message);
+      await alert("Error: " + err.message, { title: "Error" });
     }
   };
 
   const handleArchive = async () => {
-    if (!confirm("Archive this document?")) return;
+    const ok = await confirm("Archive this document?", {
+      title: "Confirm",
+      confirmText: "Archive",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     setIsArchiving(true);
 
     try {
@@ -131,11 +138,11 @@ export default function DocumentDetail({
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to archive");
-      alert("Document archived");
+      await alert("Document archived", { title: "Success" });
       onUpdate?.();
       loadDocument();
     } catch (err) {
-      alert("Error: " + err.message);
+      await alert("Error: " + err.message, { title: "Error" });
     } finally {
       setIsArchiving(false);
     }
@@ -153,14 +160,19 @@ export default function DocumentDetail({
       if (!res.ok) throw new Error("Failed to update legal hold");
       loadDocument();
     } catch (err) {
-      alert("Error: " + err.message);
+      await alert("Error: " + err.message, { title: "Error" });
     } finally {
       setIsSettingLegalHold(false);
     }
   };
 
   const handleRestoreVersion = async (version: number) => {
-    if (!confirm(`Restore version ${version}?`)) return;
+    const ok = await confirm(`Restore version ${version}?`, {
+      title: "Confirm",
+      confirmText: "Restore",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
 
     try {
       const res = await fetch(`${API}/documents/${docId}/restore-version`, {
@@ -170,10 +182,10 @@ export default function DocumentDetail({
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to restore version");
-      alert("Version restored");
+      await alert("Version restored", { title: "Success" });
       loadDocument();
     } catch (err) {
-      alert("Error: " + err.message);
+      await alert("Error: " + err.message, { title: "Error" });
     }
   };
 

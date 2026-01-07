@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "../components/ThemeProvider";
 import Navbar from "../components/Navbar";
 import Sidebar from "../components/Sidebar";
+import { ModalProvider } from "../components/ModalProvider";
 
 export const metadata: Metadata = {
   title: "EDMS — Electronic Document Management System",
@@ -18,6 +19,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className="antialiased bg-white dark:bg-zinc-950 text-zinc-900 dark:text-zinc-50 transition-colors">
       <ThemeProvider>
+        <ModalProvider>
           <div className="flex h-screen overflow-hidden">
             <Sidebar />
             <div className="flex flex-col flex-1 overflow-hidden">
@@ -27,7 +29,8 @@ export default function RootLayout({
               </main>
             </div>
           </div>
-    </ThemeProvider>
+        </ModalProvider>
+      </ThemeProvider>
       </body>
     </html>
   );

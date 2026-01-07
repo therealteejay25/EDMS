@@ -97,9 +97,11 @@ export default function ChooseDepartmentPage() {
             <Button
               onClick={handleSave}
               disabled={saving || !selected || departments.length === 0}
+              loading={saving}
+              loadingText="Saving..."
               className="w-full"
             >
-              {saving ? "Saving..." : "Continue"}
+              Continue
             </Button>
 
             {departments.length === 0 ? (

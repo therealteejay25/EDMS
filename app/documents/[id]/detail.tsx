@@ -13,8 +13,10 @@ import {
   restoreDocumentVersion,
 } from "@/lib/apiClient";
 import Link from "next/link";
+import { useModal } from "@/components/ModalProvider";
 
 export default function DocumentDetailPage() {
+  const { alert, confirm } = useModal();
   const params = useParams();
   const docId = params.id as string;
   const [doc, setDoc] = useState<any>(null);
@@ -68,7 +70,9 @@ export default function DocumentDetailPage() {
       // Refresh document to get updated comments
       await fetchDocument();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to add comment");
+      await alert(err instanceof Error ? err.message : "Failed to add comment", {
+        title: "Error",
+      });
     }
   };
 
@@ -83,7 +87,9 @@ export default function DocumentDetailPage() {
       setTags("");
       await fetchDocument();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to add tags");
+      await alert(err instanceof Error ? err.message : "Failed to add tags", {
+        title: "Error",
+      });
     }
   };
 
@@ -93,20 +99,32 @@ export default function DocumentDetailPage() {
       if (!assignee) return;
       const priority = prompt("Priority (low/medium/high):", "medium") || "medium";
       await requestDocumentApproval(docId, assignee, priority);
-      alert("Approval requested successfully");
+      await alert("Approval requested successfully", { title: "Success" });
       await fetchDocument();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to request approval. Note: Assignee must be a valid user ID.");
+      await alert(
+        err instanceof Error
+          ? err.message
+          : "Failed to request approval. Note: Assignee must be a valid user ID.",
+        { title: "Error" }
+      );
     }
   };
 
   const handleArchive = async () => {
-    if (!confirm("Archive this document?")) return;
+    const ok = await confirm("Archive this document?", {
+      title: "Confirm",
+      confirmText: "Archive",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     try {
       await archiveDocument(docId);
       fetchDocument();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to archive");
+      await alert(err instanceof Error ? err.message : "Failed to archive", {
+        title: "Error",
+      });
     }
   };
 
@@ -115,7 +133,9 @@ export default function DocumentDetailPage() {
       await setDocumentLegalHold(docId, hold);
       fetchDocument();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to set legal hold");
+      await alert(err instanceof Error ? err.message : "Failed to set legal hold", {
+        title: "Error",
+      });
     }
   };
 
@@ -130,13 +150,15 @@ export default function DocumentDetailPage() {
       const form = new FormData();
       form.append("file", input.files[0]);
       await uploadDocumentVersion(docId, form);
-      alert("New version uploaded successfully!");
+      await alert("New version uploaded successfully!", { title: "Success" });
       // Clear file input
       input.value = "";
       // Refresh document
       await fetchDocument();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to upload version");
+      await alert(err instanceof Error ? err.message : "Failed to upload version", {
+        title: "Error",
+      });
     }
   };
 
@@ -145,8 +167,9 @@ export default function DocumentDetailPage() {
       // Version history is already loaded with document
       setActiveTab("versions");
     } catch (err) {
-      alert(
-        err instanceof Error ? err.message : "Failed to load version history"
+      await alert(
+        err instanceof Error ? err.message : "Failed to load version history",
+        { title: "Error" }
       );
     }
   };
@@ -382,10 +405,10 @@ export default function DocumentDetailPage() {
                             onClick={async () => {
                               try {
                                 await restoreDocumentVersion(docId, entry.version);
-                                alert("Version restored successfully");
+                                await alert("Version restored successfully", { title: "Success" });
                                 fetchDocument();
                               } catch (err) {
-                                alert("Failed to restore");
+                                await alert("Failed to restore", { title: "Error" });
                               }
                             }}
                             className="px-3 py-1 text-green-600 text-sm hover:bg-green-50 rounded"

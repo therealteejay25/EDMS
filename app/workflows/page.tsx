@@ -6,6 +6,7 @@ import Button from "../../components/Button";
 import Badge from "../../components/Badge";
 import Input from "../../components/Input";
 import Select from "../../components/Select";
+import { useModal } from "../../components/ModalProvider";
 import { listWorkflows, createWorkflow, updateWorkflow, deleteWorkflow, Workflow } from "../../lib/apiClient";
 
 const TRIGGER_OPTIONS = [
@@ -21,6 +22,7 @@ const ACTION_OPTIONS = [
 ];
 
 export default function WorkflowsPage() {
+  const { alert, confirm } = useModal();
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -88,26 +90,31 @@ export default function WorkflowsPage() {
     try {
       if (editingWorkflow) {
         await updateWorkflow(editingWorkflow._id, formData);
-        alert("Workflow updated successfully");
+        await alert("Workflow updated successfully", { title: "Success" });
       } else {
         await createWorkflow(formData as Omit<Workflow, "_id" | "createdAt">);
-        alert("Workflow created successfully");
+        await alert("Workflow created successfully", { title: "Success" });
       }
       handleCloseModal();
       loadWorkflows();
     } catch (err: any) {
-      alert(err.message || "Failed to save workflow");
+      await alert(err.message || "Failed to save workflow", { title: "Error" });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this workflow?")) return;
+    const ok = await confirm("Are you sure you want to delete this workflow?", {
+      title: "Confirm",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     try {
       await deleteWorkflow(id);
-      alert("Workflow deleted successfully");
+      await alert("Workflow deleted successfully", { title: "Success" });
       loadWorkflows();
     } catch (err: any) {
-      alert(err.message || "Failed to delete workflow");
+      await alert(err.message || "Failed to delete workflow", { title: "Error" });
     }
   };
 

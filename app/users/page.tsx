@@ -6,6 +6,7 @@ import Button from "../../components/Button";
 import Badge from "../../components/Badge";
 import Input from "../../components/Input";
 import Select from "../../components/Select";
+import { useModal } from "../../components/ModalProvider";
 import { listUsers, createUser, updateUser, deleteUser, User } from "../../lib/userService";
 import { listDepartments } from "../../lib/apiClient";
 
@@ -16,8 +17,11 @@ const ROLES = [
 ];
 
 export default function UsersPage() {
+  const { alert, confirm } = useModal();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [departments, setDepartments] = useState<Array<{ value: string; label: string }>>([
     { value: "", label: "No Department" },
   ]);
@@ -38,7 +42,7 @@ export default function UsersPage() {
       setUsers(data);
     } catch (err) {
       console.error("Failed to load users:", err);
-      alert("Failed to load users");
+      await alert("Failed to load users", { title: "Error" });
     } finally {
       setLoading(false);
     }
@@ -94,6 +98,7 @@ export default function UsersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      setSaving(true);
       if (editingUser) {
         await updateUser(editingUser._id, {
           name: formData.name,
@@ -101,26 +106,36 @@ export default function UsersPage() {
           role: formData.role as any,
           department: formData.department || undefined,
         });
-        alert("User updated successfully");
+        await alert("User updated successfully", { title: "Success" });
       } else {
         await createUser(formData);
-        alert("User created successfully");
+        await alert("User created successfully", { title: "Success" });
       }
       handleCloseModal();
       loadUsers();
     } catch (err: any) {
-      alert(err.message || "Failed to save user");
+      await alert(err.message || "Failed to save user", { title: "Error" });
+    } finally {
+      setSaving(false);
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this user?")) return;
+    const ok = await confirm("Are you sure you want to delete this user?", {
+      title: "Confirm",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     try {
+      setDeletingId(id);
       await deleteUser(id);
-      alert("User deleted successfully");
+      await alert("User deleted successfully", { title: "Success" });
       loadUsers();
     } catch (err: any) {
-      alert(err.message || "Failed to delete user");
+      await alert(err.message || "Failed to delete user", { title: "Error" });
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -193,7 +208,15 @@ export default function UsersPage() {
                     </td>
                     <td className="px-6 py-4 text-right space-x-2">
                       <Button variant="ghost" size="sm" onClick={() => handleOpenModal(user)}>Edit</Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDelete(user._id)}>Delete</Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(user._id)}
+                        loading={deletingId === user._id}
+                        loadingText="Deleting..."
+                      >
+                        Delete
+                      </Button>
                     </td>
                   </tr>
                 ))}
@@ -247,7 +270,9 @@ export default function UsersPage() {
               )}
               <div className="flex justify-end gap-2">
                 <Button type="button" variant="outline" onClick={handleCloseModal}>Cancel</Button>
-                <Button type="submit">{editingUser ? "Update" : "Create"}</Button>
+                <Button type="submit" loading={saving} loadingText={editingUser ? "Updating..." : "Creating..."}>
+                  {editingUser ? "Update" : "Create"}
+                </Button>
               </div>
             </form>
           </div>

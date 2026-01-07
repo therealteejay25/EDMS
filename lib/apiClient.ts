@@ -1,4 +1,5 @@
 // Frontend API Client with caching, error handling, and state management
+import { clearAuth } from "./auth";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
@@ -88,6 +89,33 @@ class APIClient {
 }
 
 const client = new APIClient();
+
+// ===================== Analytics =====================
+
+export interface AnalyticsStats {
+  totalDocuments: number;
+  activeDocuments: number;
+  archivedDocuments: number;
+  expiredDocuments: number;
+  draftDocuments: number;
+  expiringSoon: number;
+  byType: Record<string, number>;
+  byDepartment: Record<string, number>;
+  byStatus: Record<string, number>;
+  approvalsByStatus: Record<string, number>;
+  approvalsDecidedLast30Days: number;
+  avgApprovalTimeHours: number | null;
+  p95ApprovalTimeHours: number | null;
+  docsCreatedLast30Days: Array<{ date: string; count: number }>;
+  topTags: Array<{ tag: string; count: number }>;
+  storageUsed: string | null;
+  generatedAt: string;
+}
+
+export async function getAnalyticsStats(): Promise<AnalyticsStats> {
+  const result: any = await client.request("/stats/analytics", { skipCache: true });
+  return result as AnalyticsStats;
+}
 
 // ===================== Documents =====================
 
@@ -560,11 +588,30 @@ export async function getCurrentUser(): Promise<User> {
 }
 
 export async function logout(): Promise<void> {
+  clearAuth();
   client.clearCache();
-  await fetch(`${API_URL}/auth/logout`, {
-    method: "POST",
-    credentials: "include",
-  });
+  try {
+    await client.request("/auth/logout", {
+      method: "POST",
+      skipCache: true,
+    });
+  } finally {
+    client.clearCache();
+  }
+}
+
+// ===================== Integrations (Zoho) =====================
+
+export interface ZohoIntegrationStatus {
+  enabled: boolean;
+  hasWebhookUrl: boolean;
+  hasWorkDriveFolder: boolean;
+  hasSignTemplate: boolean;
+}
+
+export async function getZohoIntegrationStatus(): Promise<ZohoIntegrationStatus> {
+  const result: any = await client.request("/zoho/status", { skipCache: true });
+  return result as ZohoIntegrationStatus;
 }
 
 // ===================== Organization / Departments =====================

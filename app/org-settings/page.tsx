@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import Input from "../../components/Input";
+import { useModal } from "../../components/ModalProvider";
 import {
   listWorkflows,
   createWorkflow,
@@ -28,6 +29,7 @@ interface AuditLog {
 }
 
 export default function OrgSettingsPage() {
+  const { alert, confirm } = useModal();
   const [activeTab, setActiveTab] = useState<
     "workflows" | "audit" | "retention" | "departments"
   >("workflows");
@@ -56,7 +58,7 @@ export default function OrgSettingsPage() {
     } catch (error) {
       console.error("Failed to load workflows:", error);
       setWorkflows([]); // Ensure it's always an array
-      alert("Failed to load workflows");
+      await alert("Failed to load workflows", { title: "Error" });
     }
   };
 
@@ -67,7 +69,7 @@ export default function OrgSettingsPage() {
     } catch (error) {
       console.error("Failed to load audit logs:", error);
       setAuditLogs([]); // Ensure it's always an array
-      alert("Failed to load audit logs");
+      await alert("Failed to load audit logs", { title: "Error" });
     }
   };
 
@@ -92,7 +94,7 @@ export default function OrgSettingsPage() {
           });
         } catch (error) {
           console.error("Failed to load retention policies:", error);
-          alert("Failed to load retention policies");
+          await alert("Failed to load retention policies", { title: "Error" });
         }
       })();
     } else if (activeTab === "departments") {
@@ -105,7 +107,7 @@ export default function OrgSettingsPage() {
         } catch (error) {
           console.error("Failed to load departments:", error);
           setDepartments([]);
-          alert("Failed to load departments");
+          await alert("Failed to load departments", { title: "Error" });
         }
       })();
     }
@@ -114,7 +116,7 @@ export default function OrgSettingsPage() {
   const handleAddDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      alert("Only admins can manage departments");
+      await alert("Only admins can manage departments", { title: "Not allowed" });
       return;
     }
     const name = newDepartment.trim();
@@ -126,7 +128,9 @@ export default function OrgSettingsPage() {
       setDepartments(depts);
       setNewDepartment("");
     } catch (error: any) {
-      alert("Failed to add department: " + (error?.message || "Unknown error"));
+      await alert("Failed to add department: " + (error?.message || "Unknown error"), {
+        title: "Error",
+      });
     } finally {
       setLoading(false);
     }
@@ -134,17 +138,24 @@ export default function OrgSettingsPage() {
 
   const handleRemoveDepartment = async (name: string) => {
     if (!isAdmin) {
-      alert("Only admins can manage departments");
+      await alert("Only admins can manage departments", { title: "Not allowed" });
       return;
     }
-    if (!confirm(`Remove department '${name}'?`)) return;
+    const ok = await confirm(`Remove department '${name}'?`, {
+      title: "Confirm",
+      confirmText: "Remove",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
 
     setLoading(true);
     try {
       const depts = await removeDepartment(name);
       setDepartments(depts);
     } catch (error: any) {
-      alert("Failed to remove department: " + (error?.message || "Unknown error"));
+      await alert("Failed to remove department: " + (error?.message || "Unknown error"), {
+        title: "Error",
+      });
     } finally {
       setLoading(false);
     }
@@ -153,7 +164,7 @@ export default function OrgSettingsPage() {
   const handleSaveRetention = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAdmin) {
-      alert("Only admins can edit retention policies");
+      await alert("Only admins can edit retention policies", { title: "Not allowed" });
       return;
     }
     setSavingRetention(true);
@@ -167,9 +178,11 @@ export default function OrgSettingsPage() {
           },
         },
       } as any);
-      alert("Retention policies updated");
+      await alert("Retention policies updated", { title: "Success" });
     } catch (error: any) {
-      alert("Failed to save retention policies: " + (error?.message || "Unknown error"));
+      await alert("Failed to save retention policies: " + (error?.message || "Unknown error"), {
+        title: "Error",
+      });
     } finally {
       setSavingRetention(false);
     }
@@ -193,24 +206,29 @@ export default function OrgSettingsPage() {
         ],
         enabled: true,
       } as any);
-      alert("Workflow created!");
+      await alert("Workflow created!", { title: "Success" });
       setNewWorkflow({ name: "", trigger: "document_type", triggerValue: "" });
       loadWorkflows();
     } catch (error: any) {
-      alert("Failed to create workflow: " + error.message);
+      await alert("Failed to create workflow: " + error.message, { title: "Error" });
     } finally {
       setLoading(false);
     }
   };
 
   const handleDeleteWorkflow = async (id: string) => {
-    if (!confirm("Delete this workflow?")) return;
+    const ok = await confirm("Delete this workflow?", {
+      title: "Confirm",
+      confirmText: "Delete",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     try {
       await deleteWorkflow(id);
-      alert("Workflow deleted");
+      await alert("Workflow deleted", { title: "Success" });
       loadWorkflows();
     } catch (error: any) {
-      alert("Failed to delete: " + error.message);
+      await alert("Failed to delete: " + error.message, { title: "Error" });
     }
   };
 
@@ -224,7 +242,7 @@ export default function OrgSettingsPage() {
       a.click();
       URL.revokeObjectURL(url);
     } catch (error: any) {
-      alert("Failed to export: " + error.message);
+      await alert("Failed to export: " + error.message, { title: "Error" });
     }
   };
 
@@ -421,8 +439,13 @@ export default function OrgSettingsPage() {
             />
 
             <div className="flex justify-end">
-              <Button type="submit" disabled={!isAdmin || savingRetention}>
-                {savingRetention ? "Saving..." : "Save Retention Policies"}
+              <Button
+                type="submit"
+                disabled={!isAdmin}
+                loading={savingRetention}
+                loadingText="Saving..."
+              >
+                Save Retention Policies
               </Button>
             </div>
           </form>
@@ -441,8 +464,13 @@ export default function OrgSettingsPage() {
                 placeholder="e.g., HR"
                 disabled={!isAdmin || loading}
               />
-              <Button type="submit" disabled={!isAdmin || loading || !newDepartment.trim()}>
-                {loading ? "Saving..." : "Add Department"}
+              <Button
+                type="submit"
+                disabled={!isAdmin || !newDepartment.trim()}
+                loading={loading}
+                loadingText="Adding..."
+              >
+                Add Department
               </Button>
               {!isAdmin ? (
                 <p className="text-sm text-zinc-600">Only admins can manage departments.</p>
@@ -464,7 +492,9 @@ export default function OrgSettingsPage() {
                     <Button
                       variant="danger"
                       onClick={() => handleRemoveDepartment(d)}
-                      disabled={!isAdmin || loading}
+                      disabled={!isAdmin}
+                      loading={loading}
+                      loadingText="Removing..."
                     >
                       Remove
                     </Button>

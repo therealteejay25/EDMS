@@ -7,6 +7,7 @@ import Button from "../../../components/Button";
 import Badge from "../../../components/Badge";
 import Input from "../../../components/Input";
 import Textarea from "../../../components/Textarea";
+import { useModal } from "../../../components/ModalProvider";
 import {
   getDocument,
   addDocumentComment,
@@ -27,6 +28,7 @@ const API_URL =
   "http://localhost:4000";
 
 export default function DocumentDetailPage() {
+  const { alert, confirm } = useModal();
   const params = useParams();
   const router = useRouter();
   const docId = params.id as string;
@@ -73,7 +75,7 @@ export default function DocumentDetailPage() {
       setNewComment("");
       loadData();
     } catch (err) {
-      alert(err.message || "Failed to add comment");
+      await alert(err.message || "Failed to add comment", { title: "Error" });
     }
   };
 
@@ -87,17 +89,22 @@ export default function DocumentDetailPage() {
       setNewTag("");
       loadData();
     } catch (err) {
-      alert(err.message || "Failed to add tag");
+      await alert(err.message || "Failed to add tag", { title: "Error" });
     }
   };
 
   const handleArchive = async () => {
-    if (!confirm("Are you sure you want to archive this document?")) return;
+    const ok = await confirm("Are you sure you want to archive this document?", {
+      title: "Confirm",
+      confirmText: "Archive",
+      cancelText: "Cancel",
+    });
+    if (!ok) return;
     try {
       await archiveDocument(docId);
       loadData();
     } catch (err) {
-      alert(err.message || "Failed to archive document");
+      await alert(err.message || "Failed to archive document", { title: "Error" });
     }
   };
 
@@ -106,7 +113,7 @@ export default function DocumentDetailPage() {
       await setDocumentLegalHold(docId, hold);
       loadData();
     } catch (err) {
-      alert(err.message || "Failed to update legal hold");
+      await alert(err.message || "Failed to update legal hold", { title: "Error" });
     }
   };
 
@@ -122,9 +129,9 @@ export default function DocumentDetailPage() {
       form.append("file", file);
       await uploadDocumentVersion(docId, form);
       loadData();
-      alert("New version uploaded successfully");
+      await alert("New version uploaded successfully", { title: "Success" });
     } catch (err) {
-      alert(err.message || "Failed to upload version");
+      await alert(err.message || "Failed to upload version", { title: "Error" });
     } finally {
       setUploadingVersion(false);
       e.target.value = "";
@@ -132,13 +139,20 @@ export default function DocumentDetailPage() {
   };
 
   const handleRestoreVersion = async (version: number) => {
-    if (!confirm(`Restore version ${version}? This will create a new version.`))
-      return;
+    const ok = await confirm(
+      `Restore version ${version}? This will create a new version.`,
+      {
+        title: "Confirm",
+        confirmText: "Restore",
+        cancelText: "Cancel",
+      }
+    );
+    if (!ok) return;
     try {
       await restoreDocumentVersion(docId, version);
       loadData();
     } catch (err) {
-      alert(err.message || "Failed to restore version");
+      await alert(err.message || "Failed to restore version", { title: "Error" });
     }
   };
 
@@ -150,11 +164,11 @@ export default function DocumentDetailPage() {
     try {
       setRequestingApproval(true);
       await requestDocumentApproval(docId, assignee);
-      alert("Approval requested successfully");
+      await alert("Approval requested successfully", { title: "Success" });
       loadData();
     } catch (err) {
       const error = err as Error;
-      alert(error.message || "Failed to request approval");
+      await alert(error.message || "Failed to request approval", { title: "Error" });
     } finally {
       setRequestingApproval(false);
     }
@@ -241,7 +255,8 @@ export default function DocumentDetailPage() {
                 <Button
                   variant="outline"
                   onClick={handleRequestApproval}
-                  disabled={requestingApproval}
+                  loading={requestingApproval}
+                  loadingText="Requesting..."
                 >
                   Request Approval
                 </Button>
@@ -462,9 +477,10 @@ export default function DocumentDetailPage() {
                     variant="outline"
                     size="sm"
                     as="span"
-                    disabled={uploadingVersion}
+                    loading={uploadingVersion}
+                    loadingText="Uploading..."
                   >
-                    {uploadingVersion ? "Uploading..." : "Upload New Version"}
+                    Upload New Version
                   </Button>
                 </label>
               )}
