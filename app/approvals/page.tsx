@@ -35,8 +35,10 @@ export default function ApprovalsPage() {
       const data = await listApprovals(
         filter === "pending" ? { status: "pending" } : {}
       );
-      setApprovals(data.data);
+      setApprovals(Array.isArray(data?.data) ? data.data : []);
     } catch (error) {
+      console.error("Failed to load approvals:", error);
+      setApprovals([]);
       alert("Failed to load approvals: " + (error?.message || "Unknown error"));
     } finally {
       setLoading(false);

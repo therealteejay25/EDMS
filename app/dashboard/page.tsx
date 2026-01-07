@@ -51,11 +51,12 @@ export default function DashboardPage() {
           limit: 5,
           page: 1,
         }).catch(() => ({ data: [], total: 0 }));
-        setRecentDocs(docsRes.data || []);
+        setRecentDocs(Array.isArray(docsRes?.data) ? docsRes.data : []);
 
         // Load pending approvals
         const approvals = await getMyPendingApprovals().catch(() => []);
-        setPendingApprovals(Array.isArray(approvals) ? approvals : []);
+        const safeApprovals = Array.isArray(approvals) ? approvals : [];
+        setPendingApprovals(safeApprovals);
 
         // Load stats from API
         try {
@@ -65,16 +66,16 @@ export default function DashboardPage() {
           if (statsRes.ok) {
             const statsData = await statsRes.json();
             setStats({
-              totalDocuments: statsData.totalDocuments || docsRes.total || 0,
-              pendingApprovals: approvals.length,
+              totalDocuments: statsData.totalDocuments || docsRes?.total || 0,
+              pendingApprovals: safeApprovals.length,
               expiringSoon: statsData.expiringSoon || 0,
               storageUsed: statsData.storageUsed || "0 GB",
               recentActivity: new Date().toLocaleDateString(),
             });
           } else {
             setStats({
-              totalDocuments: docsRes.total || 0,
-              pendingApprovals: approvals.length,
+              totalDocuments: docsRes?.total || 0,
+              pendingApprovals: safeApprovals.length,
               expiringSoon: 0,
               storageUsed: "0 GB",
               recentActivity: new Date().toLocaleDateString(),
@@ -82,8 +83,8 @@ export default function DashboardPage() {
           }
         } catch (e) {
           setStats({
-            totalDocuments: docsRes.total || 0,
-            pendingApprovals: approvals.length,
+            totalDocuments: docsRes?.total || 0,
+            pendingApprovals: safeApprovals.length,
             expiringSoon: 0,
             storageUsed: "0 GB",
             recentActivity: new Date().toLocaleDateString(),

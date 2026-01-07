@@ -157,7 +157,7 @@ export async function listDocuments(
   if (filter.page) params.set("page", String(filter.page));
   if (filter.limit) params.set("limit", String(filter.limit));
 
-  const result = await client.request(`/documents?${params.toString()}`);
+  const result: any = await client.request(`/documents?${params.toString()}`);
   // Backend returns { data, total, page, pageSize }
   // Handle both response formats for compatibility
   if (result && typeof result === "object") {
@@ -179,7 +179,7 @@ export async function listDocuments(
 export async function getDocument(
   id: string
 ): Promise<{ doc: Document; approvals: any[]; auditLog: any[] }> {
-  const result = await client.request(`/documents/${id}`);
+  const result: any = await client.request(`/documents/${id}`);
   // Backend returns { doc, approvals, auditLog }
   return {
     doc: result.doc || result,
@@ -191,7 +191,7 @@ export async function getDocument(
 export async function uploadDocument(
   form: FormData
 ): Promise<{ doc: Document }> {
-  const result = await client.request("/documents", {
+  const result: any = await client.request("/documents", {
     method: "POST",
     body: form,
     skipCache: true,
@@ -208,7 +208,7 @@ export async function uploadDocumentVersion(
 ): Promise<{ doc: Document }> {
   client.clearCacheEntry(`/documents/${docId}`);
   client.clearCacheEntry("/documents");
-  const result = await client.request(`/documents/${docId}/version`, {
+  const result: any = await client.request(`/documents/${docId}/version`, {
     method: "POST",
     body: form,
     skipCache: true,
@@ -285,7 +285,7 @@ export async function requestDocumentApproval(
 ): Promise<{ approval: any }> {
   client.clearCacheEntry(`/documents/${docId}`);
   client.clearCacheEntry("/approvals");
-  const result = await client.request(`/documents/${docId}/request-approval`, {
+  const result: any = await client.request(`/documents/${docId}/request-approval`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ assignee, priority: priority || "medium", dueDate }),
@@ -320,7 +320,7 @@ export async function listApprovals(
   if (filter.status) params.set("status", filter.status);
   if (filter.page) params.set("page", String(filter.page));
 
-  const result = await client.request(`/approvals?${params.toString()}`);
+  const result: any = await client.request(`/approvals?${params.toString()}`);
   // Backend returns { data, total, page }
   return {
     data: result.data || [],
@@ -330,7 +330,7 @@ export async function listApprovals(
 
 export async function getMyPendingApprovals(): Promise<Approval[]> {
   try {
-    const result = await client.request("/approvals/pending", {
+    const result: any = await client.request("/approvals/pending", {
       skipCache: true,
     });
     // Backend returns array directly or { approvals: [...] }
@@ -360,7 +360,7 @@ export async function approveDocument(
   comment?: string
 ): Promise<Approval> {
   client.clearCacheEntry("/approvals");
-  const result = await client.request(`/approvals/${approvalId}/approve`, {
+  const result: any = await client.request(`/approvals/${approvalId}/approve`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ comment }),
@@ -373,7 +373,7 @@ export async function rejectDocument(
   comment?: string
 ): Promise<Approval> {
   client.clearCacheEntry("/approvals");
-  const result = await client.request(`/approvals/${approvalId}/reject`, {
+  const result: any = await client.request(`/approvals/${approvalId}/reject`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ comment }),
@@ -383,14 +383,14 @@ export async function rejectDocument(
 
 export async function escalateApproval(approvalId: string): Promise<Approval> {
   client.clearCacheEntry("/approvals");
-  const result = await client.request(`/approvals/${approvalId}/escalate`, {
+  const result: any = await client.request(`/approvals/${approvalId}/escalate`, {
     method: "POST",
   });
   return result.approval || result;
 }
 
 export async function getOverdueApprovals(): Promise<Approval[]> {
-  const result = await client.request("/approvals/overdue");
+  const result: any = await client.request("/approvals/overdue");
   return Array.isArray(result) ? result : result.overdue || [];
 }
 
@@ -413,22 +413,26 @@ export interface Workflow {
 }
 
 export async function listWorkflows(): Promise<Workflow[]> {
-  return client.request("/workflows");
+  const result: any = await client.request("/workflows");
+  return Array.isArray(result) ? result : result.workflows || [];
 }
 
 export async function getWorkflow(id: string): Promise<Workflow> {
-  return client.request(`/workflows/${id}`);
+  const result: any = await client.request(`/workflows/${id}`);
+  return result.workflow || result;
 }
 
 export async function createWorkflow(
   workflow: Omit<Workflow, "_id" | "createdAt">
 ): Promise<Workflow> {
   client.clearCacheEntry("/workflows");
-  return client.request("/workflows", {
+  const result: any = await client.request("/workflows", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(workflow),
   });
+
+  return result.workflow || result;
 }
 
 export async function updateWorkflow(
@@ -437,28 +441,39 @@ export async function updateWorkflow(
 ): Promise<Workflow> {
   client.clearCacheEntry("/workflows");
   client.clearCacheEntry(`/workflows/${id}`);
-  return client.request(`/workflows/${id}`, {
+  const result: any = await client.request(`/workflows/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
   });
+
+  return result.workflow || result;
 }
 
 export async function deleteWorkflow(
   id: string
 ): Promise<{ success: boolean }> {
   client.clearCacheEntry("/workflows");
-  return client.request(`/workflows/${id}`, { method: "DELETE" });
+  const result: any = await client.request(`/workflows/${id}`, { method: "DELETE" });
+  if (typeof result?.ok === "boolean") return { success: result.ok };
+  if (typeof result?.success === "boolean") return { success: result.success };
+  return { success: true };
 }
 
 export async function testWorkflow(
   workflow: Partial<Workflow>,
-  docType: string
-): Promise<{ matched: boolean }> {
-  return client.request("/workflows/test", {
+  docType: string,
+  department?: string
+): Promise<{ matches: boolean; workflow?: Workflow; message?: string }>
+{
+  if (!workflow?._id) {
+    throw new Error("Workflow id is required to test a workflow");
+  }
+
+  return client.request(`/workflows/${workflow._id}/test`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ workflow, docType }),
+    body: JSON.stringify({ docType, department }),
   });
 }
 
@@ -491,11 +506,23 @@ export async function listAuditLogs(
   if (filter.endDate) params.set("endDate", filter.endDate);
   if (filter.page) params.set("page", String(filter.page));
 
-  return client.request(`/audit?${params.toString()}`);
+  const result: any = await client.request(`/audit?${params.toString()}`);
+  const logs = result?.logs || result?.data || [];
+  return {
+    data: Array.isArray(logs) ? logs : [],
+    total: typeof result?.total === "number" ? result.total : 0,
+  };
 }
 
 export async function getDocumentAuditLog(docId: string): Promise<AuditLog[]> {
-  return client.request(`/documents/${docId}/audit`);
+  const result: any = await client.request(`/audit/${docId}/document`);
+  const logs =
+    result?.logs ||
+    result?.data ||
+    result?.audit ||
+    result?.auditLog ||
+    result?.auditLogs;
+  return Array.isArray(logs) ? logs : [];
 }
 
 export async function exportAuditLog(
@@ -528,7 +555,7 @@ export interface User {
 }
 
 export async function getCurrentUser(): Promise<User> {
-  const result = await client.request("/auth/me", { skipCache: true });
+  const result: any = await client.request("/auth/me", { skipCache: true });
   return result.user || result;
 }
 
@@ -538,6 +565,80 @@ export async function logout(): Promise<void> {
     method: "POST",
     credentials: "include",
   });
+}
+
+// ===================== Organization / Departments =====================
+
+export interface RetentionPolicies {
+  policyDocumentsYears?: number;
+  procedureDocumentsYears?: number;
+  formsYears?: number;
+}
+
+export interface Organization {
+  _id: string;
+  name: string;
+  departments?: string[];
+  settings?: {
+    retentionPolicies?: RetentionPolicies;
+    [key: string]: any;
+  };
+  zoho?: Record<string, any>;
+  createdAt?: string;
+}
+
+export async function getOrg(): Promise<Organization> {
+  const result: any = await client.request("/org", { skipCache: true });
+  return result.org || result;
+}
+
+export async function updateOrg(payload: Partial<Organization>): Promise<Organization> {
+  const result: any = await client.request("/org", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+    skipCache: true,
+  });
+  return result.org || result;
+}
+
+export async function listDepartments(): Promise<string[]> {
+  const result: any = await client.request("/org/departments", { skipCache: true });
+  const depts = result?.departments;
+  return Array.isArray(depts) ? depts : [];
+}
+
+export async function addDepartment(name: string): Promise<string[]> {
+  const result: any = await client.request("/org/departments", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name }),
+    skipCache: true,
+  });
+  const depts = result?.departments;
+  return Array.isArray(depts) ? depts : [];
+}
+
+export async function removeDepartment(name: string): Promise<string[]> {
+  const result: any = await client.request(`/org/departments/${encodeURIComponent(name)}`, {
+    method: "DELETE",
+    skipCache: true,
+  });
+  const depts = result?.departments;
+  return Array.isArray(depts) ? depts : [];
+}
+
+export async function setMyDepartment(department: string): Promise<User> {
+  const result: any = await client.request("/users/me/department", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ department }),
+    skipCache: true,
+  });
+  // Backend responds { ok, user: { _id, department } }
+  // Refresh full user object for UI
+  await client.request("/auth/me", { skipCache: true });
+  return getCurrentUser();
 }
 
 // ===================== Utility =====================

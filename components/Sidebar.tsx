@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { getCurrentUser } from "../lib/apiClient";
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
@@ -15,14 +16,26 @@ export default function Sidebar() {
       try {
         const userData = await getCurrentUser();
         setUser(userData);
+
+        if (
+          userData &&
+          userData.role !== "admin" &&
+          !userData.department &&
+          pathname !== "/choose-department" &&
+          pathname !== "/login" &&
+          pathname !== "/"
+        ) {
+          router.push("/choose-department");
+        }
       } catch (error) {
         // Not authenticated
       }
     };
     load();
-  }, []);
+  }, [pathname, router]);
 
-  if (pathname === "/login" || pathname === "/") return null;
+  if (pathname === "/login" || pathname === "/" || pathname === "/choose-department")
+    return null;
 
   const isAdmin = user?.role === "admin";
   const isDeptLead = user?.role === "department_lead";

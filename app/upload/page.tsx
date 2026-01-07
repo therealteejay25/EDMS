@@ -1,13 +1,13 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Card from "../../components/Card";
 import Input from "../../components/Input";
 import Select from "../../components/Select";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
-import { uploadDocument } from "../../lib/apiClient";
+import { listDepartments, uploadDocument } from "../../lib/apiClient";
 
 interface FileWithPreview extends File {
   preview?: string;
@@ -27,22 +27,12 @@ const DOCUMENT_TYPES = [
   { value: "Other", label: "Other" },
 ];
 
-const DEPARTMENTS = [
-  { value: "HR", label: "Human Resources" },
-  { value: "Finance", label: "Finance" },
-  { value: "Legal", label: "Legal" },
-  { value: "IT", label: "Information Technology" },
-  { value: "Operations", label: "Operations" },
-  { value: "Sales", label: "Sales" },
-  { value: "Marketing", label: "Marketing" },
-  { value: "General", label: "General" },
-];
-
 export default function UploadPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [loading, setLoading] = useState(false);
+  const [departments, setDepartments] = useState<Array<{ value: string; label: string }>>([]);
   const [uploadProgress, setUploadProgress] = useState<Record<string, number>>(
     {}
   );
@@ -52,7 +42,7 @@ export default function UploadPage() {
   const [formData, setFormData] = useState({
     title: "",
     type: "Policy",
-    department: "HR",
+    department: "",
     effectiveDate: "",
     expiryDate: "",
     tags: "",
@@ -60,6 +50,24 @@ export default function UploadPage() {
     retentionYears: "",
     uploadToZoho: false,
   });
+
+  useEffect(() => {
+    const loadDepts = async () => {
+      try {
+        const depts = await listDepartments();
+        const opts = depts.map((d) => ({ value: d, label: d }));
+        setDepartments(opts);
+
+        setFormData((prev) => {
+          if (prev.department) return prev;
+          return { ...prev, department: depts[0] || "" };
+        });
+      } catch (err) {
+        setDepartments([]);
+      }
+    };
+    loadDepts();
+  }, []);
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(e.target.files || []);
@@ -160,7 +168,7 @@ export default function UploadPage() {
         setFormData({
           title: "",
           type: "Policy",
-          department: "HR",
+          department: departments?.[0]?.value || "",
           effectiveDate: "",
           expiryDate: "",
           tags: "",
@@ -354,7 +362,7 @@ export default function UploadPage() {
               name="department"
               value={formData.department}
               onChange={handleInputChange}
-              options={DEPARTMENTS}
+              options={departments}
             />
           </div>
 

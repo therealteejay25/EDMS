@@ -27,6 +27,17 @@ export default function DocumentDetailPage() {
   const [approvals, setApprovals] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
+  const baseFileUrl = `${
+    process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:4000"
+  }${doc?.fileUrl || ""}`;
+
+  const fileExt = String(doc?.fileUrl || "")
+    .split("?")[0]
+    .split("#")[0]
+    .split(".")
+    .pop()
+    ?.toLowerCase();
+
   useEffect(() => {
     fetchDocument();
   }, [docId]);
@@ -258,7 +269,7 @@ export default function DocumentDetailPage() {
                 <h3 className="font-medium mb-2">File</h3>
                 <div className="flex gap-2">
                   <a
-                    href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || "http://localhost:4000"}${doc.fileUrl}`}
+                    href={baseFileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
@@ -267,13 +278,43 @@ export default function DocumentDetailPage() {
                   </a>
                   <span className="text-gray-400">|</span>
                   <a
-                    href={`${process.env.NEXT_PUBLIC_API_URL?.replace('/api', '') || "http://localhost:4000"}${doc.fileUrl}`}
+                    href={baseFileUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-blue-600 hover:underline"
                   >
                     Open in New Tab
                   </a>
+                </div>
+
+                <div className="mt-4">
+                  {fileExt === "pdf" ? (
+                    <iframe
+                      src={baseFileUrl}
+                      className="w-full h-[70vh] border border-zinc-200 rounded"
+                    />
+                  ) : fileExt === "png" ||
+                    fileExt === "jpg" ||
+                    fileExt === "jpeg" ||
+                    fileExt === "gif" ||
+                    fileExt === "webp" ? (
+                    <img
+                      src={baseFileUrl}
+                      alt={doc?.title || "document"}
+                      className="max-w-full border border-zinc-200 rounded"
+                    />
+                  ) : fileExt === "docx" ? (
+                    <iframe
+                      src={`https://view.officeapps.live.com/op/embed.aspx?src=${encodeURIComponent(
+                        baseFileUrl
+                      )}`}
+                      className="w-full h-[70vh] border border-zinc-200 rounded"
+                    />
+                  ) : fileExt === "doc" ? (
+                    <div className="text-sm text-zinc-600">
+                      This document type can’t be previewed in-browser. Please use the download link.
+                    </div>
+                  ) : null}
                 </div>
               </div>
 

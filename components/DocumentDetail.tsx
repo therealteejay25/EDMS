@@ -61,7 +61,7 @@ export default function DocumentDetail({
   const [isArchiving, setIsArchiving] = useState(false);
   const [isSettingLegalHold, setIsSettingLegalHold] = useState(false);
 
-  const API = process.env.NEXT_PUBLIC_API_URL || "";
+  const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
   const loadDocument = useCallback(async () => {
     setLoading(true);
@@ -71,7 +71,7 @@ export default function DocumentDetail({
       });
       if (!res.ok) throw new Error("Failed to load document");
       const data = await res.json();
-      setDoc(data.data);
+      setDoc(data.doc);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -88,7 +88,7 @@ export default function DocumentDetail({
     if (!newComment.trim()) return;
 
     try {
-      const res = await fetch(`${API}/documents/${docId}/comments`, {
+      const res = await fetch(`${API}/documents/${docId}/comment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comment: newComment }),
@@ -110,7 +110,7 @@ export default function DocumentDetail({
       const res = await fetch(`${API}/documents/${docId}/tags`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tag: newTag }),
+        body: JSON.stringify({ tags: [...(doc?.tags || []), newTag] }),
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to add tag");
@@ -147,7 +147,7 @@ export default function DocumentDetail({
       const res = await fetch(`${API}/documents/${docId}/legal-hold`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ legalHold: !doc?.legalHold }),
+        body: JSON.stringify({ hold: !doc?.legalHold }),
         credentials: "include",
       });
       if (!res.ok) throw new Error("Failed to update legal hold");
@@ -163,7 +163,7 @@ export default function DocumentDetail({
     if (!confirm(`Restore version ${version}?`)) return;
 
     try {
-      const res = await fetch(`${API}/documents/${docId}/restore`, {
+      const res = await fetch(`${API}/documents/${docId}/restore-version`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ version }),
@@ -202,7 +202,7 @@ export default function DocumentDetail({
 
         <div className="flex flex-wrap gap-2">
           {doc.tags.map((tag) => (
-            <Badge key={tag} variant="secondary">
+            <Badge key={tag} variant="default">
               {tag}
             </Badge>
           ))}
@@ -236,7 +236,7 @@ export default function DocumentDetail({
             {doc.legalHold ? "Remove Legal Hold" : "Set Legal Hold"}
           </Button>
           <Button
-            variant="destructive"
+            variant="danger"
             onClick={handleArchive}
             disabled={isArchiving || doc.status === "archived"}
           >

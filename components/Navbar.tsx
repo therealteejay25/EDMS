@@ -18,6 +18,17 @@ export default function Navbar() {
       try {
         const userData = await getCurrentUser();
         setUser(userData);
+
+        if (
+          userData &&
+          userData.role !== "admin" &&
+          !userData.department &&
+          pathname !== "/choose-department" &&
+          pathname !== "/login" &&
+          pathname !== "/"
+        ) {
+          router.push("/choose-department");
+        }
       } catch (error) {
         if (pathname !== "/login" && pathname !== "/") {
           router.push("/login");

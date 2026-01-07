@@ -19,7 +19,15 @@ export default function LoginPage() {
         const res = await fetch(`${API}/auth/me`, {
           credentials: "include",
         });
-        if (res.ok) router.push("/dashboard");
+        if (res.ok) {
+          const data = await res.json().catch(() => null);
+          const user = data?.user || data;
+          if (user && user.role !== "admin" && !user.department) {
+            router.push("/choose-department");
+            return;
+          }
+          router.push("/dashboard");
+        }
       } catch (e) {
         // ignore
       }

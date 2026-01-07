@@ -12,6 +12,7 @@ import {
   Document,
   formatDateTime,
   getBadgeVariant,
+  listDepartments,
 } from "../../lib/apiClient";
 import Link from "next/link";
 
@@ -29,17 +30,7 @@ const DOCUMENT_TYPES = [
   { value: "Other", label: "Other" },
 ];
 
-const DEPARTMENTS = [
-  { value: "", label: "All Departments" },
-  { value: "HR", label: "Human Resources" },
-  { value: "Finance", label: "Finance" },
-  { value: "Legal", label: "Legal" },
-  { value: "IT", label: "Information Technology" },
-  { value: "Operations", label: "Operations" },
-  { value: "Sales", label: "Sales" },
-  { value: "Marketing", label: "Marketing" },
-  { value: "General", label: "General" },
-];
+const DEFAULT_DEPARTMENTS = [{ value: "", label: "All Departments" }];
 
 const STATUSES = [
   { value: "", label: "All Status" },
@@ -54,6 +45,9 @@ export default function DocumentsPage() {
   const [documents, setDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [departments, setDepartments] = useState<Array<{ value: string; label: string }>>(
+    DEFAULT_DEPARTMENTS
+  );
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
   const pageSize = 20;
@@ -87,6 +81,21 @@ export default function DocumentsPage() {
   React.useEffect(() => {
     loadDocuments();
   }, [page]);
+
+  React.useEffect(() => {
+    const loadDepts = async () => {
+      try {
+        const depts = await listDepartments();
+        setDepartments([
+          { value: "", label: "All Departments" },
+          ...depts.map((d) => ({ value: d, label: d })),
+        ]);
+      } catch (err) {
+        setDepartments(DEFAULT_DEPARTMENTS);
+      }
+    };
+    loadDepts();
+  }, []);
 
   React.useEffect(() => {
     setPage(1);
@@ -157,7 +166,7 @@ export default function DocumentsPage() {
             />
             <Select
               label="Department"
-              options={DEPARTMENTS}
+              options={departments}
               value={filters.department}
               onChange={(e) => handleFilterChange("department", e.target.value)}
             />

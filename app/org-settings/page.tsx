@@ -10,16 +10,14 @@ import {
   listAuditLogs,
   exportAuditLog,
   formatDateTime,
+  getCurrentUser,
+  getOrg,
+  updateOrg,
+  listDepartments,
+  addDepartment,
+  removeDepartment,
+  Workflow,
 } from "../../lib/apiClient";
-
-interface Workflow {
-  _id: string;
-  name: string;
-  trigger: string;
-  triggerValue?: string;
-  steps: Array<{ order: number; action: string; dueInDays?: number }>;
-  enabled: boolean;
-}
 
 interface AuditLog {
   _id: string;
@@ -31,11 +29,20 @@ interface AuditLog {
 
 export default function OrgSettingsPage() {
   const [activeTab, setActiveTab] = useState<
-    "workflows" | "audit" | "retention"
+    "workflows" | "audit" | "retention" | "departments"
   >("workflows");
   const [workflows, setWorkflows] = useState<Workflow[]>([]);
   const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
   const [loading, setLoading] = useState(false);
+  const [savingRetention, setSavingRetention] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [departments, setDepartments] = useState<string[]>([]);
+  const [newDepartment, setNewDepartment] = useState("");
+  const [retention, setRetention] = useState({
+    policyDocumentsYears: 7,
+    procedureDocumentsYears: 5,
+    formsYears: 3,
+  });
   const [newWorkflow, setNewWorkflow] = useState({
     name: "",
     trigger: "document_type",
@@ -69,26 +76,123 @@ export default function OrgSettingsPage() {
       loadWorkflows();
     } else if (activeTab === "audit") {
       loadAuditLogs();
+    } else if (activeTab === "retention") {
+      (async () => {
+        try {
+          const me = await getCurrentUser();
+          setIsAdmin(me?.role === "admin");
+          const org = await getOrg();
+          const rp = org?.settings?.retentionPolicies || {};
+          setRetention({
+            policyDocumentsYears:
+              typeof rp.policyDocumentsYears === "number" ? rp.policyDocumentsYears : 7,
+            procedureDocumentsYears:
+              typeof rp.procedureDocumentsYears === "number" ? rp.procedureDocumentsYears : 5,
+            formsYears: typeof rp.formsYears === "number" ? rp.formsYears : 3,
+          });
+        } catch (error) {
+          console.error("Failed to load retention policies:", error);
+          alert("Failed to load retention policies");
+        }
+      })();
+    } else if (activeTab === "departments") {
+      (async () => {
+        try {
+          const me = await getCurrentUser();
+          setIsAdmin(me?.role === "admin");
+          const depts = await listDepartments();
+          setDepartments(depts);
+        } catch (error) {
+          console.error("Failed to load departments:", error);
+          setDepartments([]);
+          alert("Failed to load departments");
+        }
+      })();
     }
   }, [activeTab]);
+
+  const handleAddDepartment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) {
+      alert("Only admins can manage departments");
+      return;
+    }
+    const name = newDepartment.trim();
+    if (!name) return;
+
+    setLoading(true);
+    try {
+      const depts = await addDepartment(name);
+      setDepartments(depts);
+      setNewDepartment("");
+    } catch (error: any) {
+      alert("Failed to add department: " + (error?.message || "Unknown error"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRemoveDepartment = async (name: string) => {
+    if (!isAdmin) {
+      alert("Only admins can manage departments");
+      return;
+    }
+    if (!confirm(`Remove department '${name}'?`)) return;
+
+    setLoading(true);
+    try {
+      const depts = await removeDepartment(name);
+      setDepartments(depts);
+    } catch (error: any) {
+      alert("Failed to remove department: " + (error?.message || "Unknown error"));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSaveRetention = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!isAdmin) {
+      alert("Only admins can edit retention policies");
+      return;
+    }
+    setSavingRetention(true);
+    try {
+      await updateOrg({
+        settings: {
+          retentionPolicies: {
+            policyDocumentsYears: Number(retention.policyDocumentsYears),
+            procedureDocumentsYears: Number(retention.procedureDocumentsYears),
+            formsYears: Number(retention.formsYears),
+          },
+        },
+      } as any);
+      alert("Retention policies updated");
+    } catch (error: any) {
+      alert("Failed to save retention policies: " + (error?.message || "Unknown error"));
+    } finally {
+      setSavingRetention(false);
+    }
+  };
 
   const handleCreateWorkflow = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       await createWorkflow({
-        ...newWorkflow,
-        trigger: newWorkflow.trigger as "document_type" | "department" | "manual",
+        name: newWorkflow.name,
+        trigger: newWorkflow.trigger as any,
+        triggerValue: newWorkflow.triggerValue,
         steps: [
           {
             order: 1,
             approvers: [],
-            action: "approve" as const,
+            action: "approve",
             dueInDays: 3,
           },
         ],
         enabled: true,
-      } as Omit<Workflow, "_id" | "createdAt">);
+      } as any);
       alert("Workflow created!");
       setNewWorkflow({ name: "", trigger: "document_type", triggerValue: "" });
       loadWorkflows();
@@ -131,7 +235,7 @@ export default function OrgSettingsPage() {
       {/* Tabs */}
       <div className="border-b border-zinc-200">
         <div className="flex gap-4">
-          {(["workflows", "audit", "retention"] as const).map((tab) => (
+          {(["workflows", "audit", "retention", "departments"] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -145,7 +249,9 @@ export default function OrgSettingsPage() {
                 ? "Workflows"
                 : tab === "audit"
                 ? "Audit Logs"
-                : "Retention"}
+                : tab === "retention"
+                ? "Retention"
+                : "Departments"}
             </button>
           ))}
         </div>
@@ -273,24 +379,101 @@ export default function OrgSettingsPage() {
       {activeTab === "retention" && (
         <Card>
           <h2 className="mb-4 text-lg font-semibold">Retention Policies</h2>
-          <div className="space-y-4">
-            <div>
-              <p className="font-semibold">Policy Documents</p>
-              <p className="mt-1 text-sm text-zinc-600">Retention: 7 years</p>
+          <form onSubmit={handleSaveRetention} className="space-y-4">
+            <Input
+              label="Policy Documents (years)"
+              type="number"
+              min={0}
+              value={String(retention.policyDocumentsYears)}
+              onChange={(e) =>
+                setRetention((prev) => ({
+                  ...prev,
+                  policyDocumentsYears: Number(e.target.value),
+                }))
+              }
+              disabled={!isAdmin}
+            />
+            <Input
+              label="Procedure Documents (years)"
+              type="number"
+              min={0}
+              value={String(retention.procedureDocumentsYears)}
+              onChange={(e) =>
+                setRetention((prev) => ({
+                  ...prev,
+                  procedureDocumentsYears: Number(e.target.value),
+                }))
+              }
+              disabled={!isAdmin}
+            />
+            <Input
+              label="Forms (years)"
+              type="number"
+              min={0}
+              value={String(retention.formsYears)}
+              onChange={(e) =>
+                setRetention((prev) => ({
+                  ...prev,
+                  formsYears: Number(e.target.value),
+                }))
+              }
+              disabled={!isAdmin}
+            />
+
+            <div className="flex justify-end">
+              <Button type="submit" disabled={!isAdmin || savingRetention}>
+                {savingRetention ? "Saving..." : "Save Retention Policies"}
+              </Button>
             </div>
-            <div>
-              <p className="font-semibold">Procedure Documents</p>
-              <p className="mt-1 text-sm text-zinc-600">Retention: 5 years</p>
-            </div>
-            <div>
-              <p className="font-semibold">Forms</p>
-              <p className="mt-1 text-sm text-zinc-600">Retention: 3 years</p>
-            </div>
-            <Button variant="outline" className="mt-4">
-              Edit Retention Policy
-            </Button>
-          </div>
+          </form>
         </Card>
+      )}
+
+      {activeTab === "departments" && (
+        <div className="space-y-6">
+          <Card>
+            <h2 className="mb-4 text-lg font-semibold">Departments</h2>
+            <form onSubmit={handleAddDepartment} className="space-y-3">
+              <Input
+                label="New Department"
+                value={newDepartment}
+                onChange={(e) => setNewDepartment(e.target.value)}
+                placeholder="e.g., HR"
+                disabled={!isAdmin || loading}
+              />
+              <Button type="submit" disabled={!isAdmin || loading || !newDepartment.trim()}>
+                {loading ? "Saving..." : "Add Department"}
+              </Button>
+              {!isAdmin ? (
+                <p className="text-sm text-zinc-600">Only admins can manage departments.</p>
+              ) : null}
+            </form>
+          </Card>
+
+          <div className="space-y-3">
+            <h3 className="text-lg font-semibold">Existing Departments</h3>
+            {departments.length === 0 ? (
+              <Card>
+                <p className="text-center text-zinc-600">No departments yet</p>
+              </Card>
+            ) : (
+              departments.map((d) => (
+                <Card key={d}>
+                  <div className="flex items-center justify-between">
+                    <div className="font-medium">{d}</div>
+                    <Button
+                      variant="danger"
+                      onClick={() => handleRemoveDepartment(d)}
+                      disabled={!isAdmin || loading}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                </Card>
+              ))
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

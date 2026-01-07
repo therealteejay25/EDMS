@@ -16,9 +16,10 @@ export default function ArchivedPage() {
     const load = async () => {
       try {
         const result = await listDocuments({ status: "archived", limit: 100 });
-        setDocuments(result.data || []);
+        setDocuments(Array.isArray(result?.data) ? result.data : []);
       } catch (err) {
         console.error("Failed to load archived documents:", err);
+        setDocuments([]);
       } finally {
         setLoading(false);
       }

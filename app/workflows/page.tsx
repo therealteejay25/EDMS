@@ -59,7 +59,10 @@ export default function WorkflowsPage() {
         trigger: workflow.trigger,
         triggerValue: workflow.triggerValue || "",
         enabled: workflow.enabled,
-        steps: workflow.steps.length > 0 ? workflow.steps : [{ order: 1, approvers: [], action: "approve", dueInDays: 3 }],
+        steps:
+          (workflow.steps?.length || 0) > 0
+            ? workflow.steps
+            : [{ order: 1, approvers: [], action: "approve", dueInDays: 3 }],
       });
     } else {
       setEditingWorkflow(null);

@@ -7,18 +7,7 @@ import Badge from "../../components/Badge";
 import Input from "../../components/Input";
 import Select from "../../components/Select";
 import { listUsers, createUser, updateUser, deleteUser, User } from "../../lib/userService";
-
-const DEPARTMENTS = [
-  { value: "", label: "No Department" },
-  { value: "HR", label: "Human Resources" },
-  { value: "Finance", label: "Finance" },
-  { value: "Legal", label: "Legal" },
-  { value: "IT", label: "Information Technology" },
-  { value: "Operations", label: "Operations" },
-  { value: "Sales", label: "Sales" },
-  { value: "Marketing", label: "Marketing" },
-  { value: "General", label: "General" },
-];
+import { listDepartments } from "../../lib/apiClient";
 
 const ROLES = [
   { value: "user", label: "User" },
@@ -29,6 +18,9 @@ const ROLES = [
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [departments, setDepartments] = useState<Array<{ value: string; label: string }>>([
+    { value: "", label: "No Department" },
+  ]);
   const [showModal, setShowModal] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
@@ -54,6 +46,21 @@ export default function UsersPage() {
 
   useEffect(() => {
     loadUsers();
+  }, []);
+
+  useEffect(() => {
+    const loadDepts = async () => {
+      try {
+        const depts = await listDepartments();
+        setDepartments([
+          { value: "", label: "No Department" },
+          ...depts.map((d) => ({ value: d, label: d })),
+        ]);
+      } catch (err) {
+        setDepartments([{ value: "", label: "No Department" }]);
+      }
+    };
+    loadDepts();
   }, []);
 
   const handleOpenModal = (user?: User) => {
@@ -227,7 +234,7 @@ export default function UsersPage() {
                 label="Department"
                 value={formData.department}
                 onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                options={DEPARTMENTS}
+                options={departments}
               />
               {!editingUser && (
                 <Input
