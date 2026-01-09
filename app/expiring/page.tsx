@@ -6,6 +6,7 @@ import Card from "../../components/Card";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
 import { listDocuments, Document, formatDateTime } from "../../lib/apiClient";
+import { titleCase } from "../../lib/display";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -53,7 +54,7 @@ export default function ExpiringPage() {
       {loading ? (
         <Card>
           <div className="p-12 text-center">
-          <div className="loader"></div>
+            <div className="loader"></div>
             <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
               Loading...
             </p>
@@ -86,15 +87,15 @@ export default function ExpiringPage() {
                           daysLeft <= 7
                             ? "danger"
                             : daysLeft <= 14
-                            ? "warning"
-                            : "default"
+                              ? "warning"
+                              : "default"
                         }
                       >
                         {daysLeft} days left
                       </Badge>
                     </div>
                     <div className="flex items-center gap-4 text-sm text-zinc-600 dark:text-zinc-400">
-                      <span>{doc.type}</span>
+                      <span>{titleCase(doc.type)}</span>
                       <span>•</span>
                       <span>{doc.department}</span>
                       <span>•</span>

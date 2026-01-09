@@ -12,6 +12,7 @@ import {
   formatDateTime,
   Document,
 } from "../../lib/apiClient";
+import { documentStatusLabel, roleLabel, titleCase } from "../../lib/display";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
 
@@ -124,11 +125,7 @@ export default function DashboardPage() {
           Welcome back, {user?.name || "User"}!
         </h1>
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
-          {isAdmin
-            ? "System Administrator"
-            : isDeptLead
-            ? "Department Lead"
-            : "User"}{" "}
+          {roleLabel(user?.role) || "User"}{" "}
           • {user?.department || "General"}
         </p>
       </div>
@@ -382,7 +379,7 @@ export default function DashboardPage() {
                     </p>
                     <div className="mt-1 flex items-center gap-2">
                       <Badge variant="default" className="text-xs">
-                        {doc.type}
+                        {titleCase(doc.type)}
                       </Badge>
                       <span className="text-xs text-zinc-500 dark:text-zinc-400">
                         {formatDateTime(doc.updatedAt)}
@@ -393,7 +390,7 @@ export default function DashboardPage() {
                     variant={doc.status === "active" ? "success" : "default"}
                     className="ml-2"
                   >
-                    {doc.status}
+                    {documentStatusLabel(doc.status)}
                   </Badge>
                 </div>
               ))

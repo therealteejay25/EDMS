@@ -14,6 +14,7 @@ import {
 } from "@/lib/apiClient";
 import Link from "next/link";
 import { useModal } from "@/components/ModalProvider";
+import { documentStatusLabel, titleCase } from "@/lib/display";
 
 export default function DocumentDetailPage() {
   const { alert, confirm } = useModal();
@@ -29,9 +30,8 @@ export default function DocumentDetailPage() {
   const [approvals, setApprovals] = useState<any[]>([]);
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
 
-  const baseFileUrl = `${
-    process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:4000"
-  }${doc?.fileUrl || ""}`;
+  const baseFileUrl = `${process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") || "http://localhost:4000"
+    }${doc?.fileUrl || ""}`;
 
   const fileExt = String(doc?.fileUrl || "")
     .split("?")[0]
@@ -205,11 +205,10 @@ export default function DocumentDetailPage() {
           </button>
           <button
             onClick={() => handleLegalHold(!doc.legalHold)}
-            className={`px-4 py-2 rounded text-sm ${
-              doc.legalHold
+            className={`px-4 py-2 rounded text-sm ${doc.legalHold
                 ? "bg-orange-600 text-white"
                 : "border border-zinc-300 hover:bg-zinc-50"
-            }`}
+              }`}
           >
             {doc.legalHold ? "Remove Hold" : "Legal Hold"}
           </button>
@@ -220,7 +219,7 @@ export default function DocumentDetailPage() {
       <div className="grid grid-cols-4 gap-4 bg-white rounded-lg border border-zinc-200 p-4">
         <div>
           <span className="text-xs font-medium text-gray-600">Type</span>
-          <p className="text-sm font-medium">{doc.type}</p>
+          <p className="text-sm font-medium">{titleCase(doc.type)}</p>
         </div>
         <div>
           <span className="text-xs font-medium text-gray-600">Department</span>
@@ -232,7 +231,7 @@ export default function DocumentDetailPage() {
         </div>
         <div>
           <span className="text-xs font-medium text-gray-600">Status</span>
-          <p className="text-sm font-medium">{doc.status}</p>
+          <p className="text-sm font-medium">{documentStatusLabel(doc.status)}</p>
         </div>
       </div>
 
@@ -244,11 +243,10 @@ export default function DocumentDetailPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-sm font-medium border-b-2 ${
-                  activeTab === tab
+                className={`px-4 py-2 text-sm font-medium border-b-2 ${activeTab === tab
                     ? "border-blue-600 text-blue-600"
                     : "border-transparent text-gray-600 hover:text-gray-900"
-                }`}
+                  }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>

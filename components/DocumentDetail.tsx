@@ -5,6 +5,7 @@ import Badge from "./Badge";
 import Button from "./Button";
 import Input from "./Input";
 import { useModal } from "./ModalProvider";
+import { documentStatusLabel, titleCase } from "@/lib/display";
 
 interface Document {
   _id: string;
@@ -201,12 +202,12 @@ export default function DocumentDetail({
           <div className="flex-1">
             <h1 className="text-3xl font-bold">{doc.title}</h1>
             <p className="mt-2 text-sm text-zinc-600">
-              Version {doc.version} • {doc.type} • {doc.department}
+              Version {doc.version} • {titleCase(doc.type)} • {doc.department}
             </p>
           </div>
           <div className="flex gap-2">
             <Badge variant={doc.status === "active" ? "success" : "default"}>
-              {doc.status}
+              {documentStatusLabel(doc.status)}
             </Badge>
             {doc.legalHold && <Badge variant="warning">Legal Hold</Badge>}
           </div>
@@ -270,11 +271,10 @@ export default function DocumentDetail({
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium ${
-                activeTab === tab
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "text-zinc-600 hover:text-zinc-900"
-              }`}
+              className={`pb-3 text-sm font-medium ${activeTab === tab
+                ? "border-b-2 border-blue-600 text-blue-600"
+                : "text-zinc-600 hover:text-zinc-900"
+                }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>
@@ -294,7 +294,7 @@ export default function DocumentDetail({
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-zinc-600">Type</p>
-                  <p className="mt-1">{doc.type}</p>
+                  <p className="mt-1">{titleCase(doc.type)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-zinc-600">
@@ -304,7 +304,7 @@ export default function DocumentDetail({
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-zinc-600">Status</p>
-                  <p className="mt-1">{doc.status}</p>
+                  <p className="mt-1">{documentStatusLabel(doc.status)}</p>
                 </div>
                 <div>
                   <p className="text-sm font-semibold text-zinc-600">Created</p>

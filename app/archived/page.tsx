@@ -6,6 +6,7 @@ import Card from "../../components/Card";
 import Button from "../../components/Button";
 import Badge from "../../components/Badge";
 import { listDocuments, Document, formatDateTime } from "../../lib/apiClient";
+import { titleCase } from "../../lib/display";
 
 export default function ArchivedPage() {
   const router = useRouter();
@@ -78,7 +79,7 @@ export default function ArchivedPage() {
                     <td className="px-6 py-4">
                       <p className="font-medium text-zinc-900 dark:text-zinc-100">{doc.title}</p>
                     </td>
-                    <td className="px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{doc.type}</td>
+                    <td className="px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{titleCase(doc.type)}</td>
                     <td className="px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{doc.department}</td>
                     <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
                       {formatDateTime(doc.updatedAt)}

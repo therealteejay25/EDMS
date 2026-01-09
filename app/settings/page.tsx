@@ -5,6 +5,7 @@ import Button from "../../components/Button";
 import Input from "../../components/Input";
 import Badge from "../../components/Badge";
 import { getCurrentUser, logout, formatDateTime } from "../../lib/apiClient";
+import { roleLabel } from "../../lib/display";
 
 export default function SettingsPage() {
   const [user, setUser] = useState<any>(null);
@@ -80,15 +81,11 @@ export default function SettingsPage() {
                     user?.role === "admin"
                       ? "success"
                       : user?.role === "department_lead"
-                      ? "warning"
-                      : "default"
+                        ? "warning"
+                        : "default"
                   }
                 >
-                  {user?.role === "admin"
-                    ? "Administrator"
-                    : user?.role === "department_lead"
-                    ? "Department Lead"
-                    : "User"}
+                  {roleLabel(user?.role)}
                 </Badge>
               </div>
             </div>

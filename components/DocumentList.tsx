@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { listDocuments } from "@/lib/apiClient";
+import { documentStatusLabel, titleCase } from "@/lib/display";
 import Link from "next/link";
 
 interface DocumentListProps {
@@ -82,15 +83,14 @@ export default function DocumentList({ filters = {} }: DocumentListProps) {
                 className="border-b border-zinc-200 hover:bg-zinc-50"
               >
                 <td className="py-3 px-4">{doc.title}</td>
-                <td className="py-3 px-4">{doc.type}</td>
+                <td className="py-3 px-4">{titleCase(doc.type)}</td>
                 <td className="py-3 px-4">{doc.department}</td>
                 <td className="py-3 px-4">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      statusColor[doc.status] || "bg-gray-100"
-                    }`}
+                    className={`px-2 py-1 rounded text-xs font-medium ${statusColor[doc.status] || "bg-gray-100"
+                      }`}
                   >
-                    {doc.status}
+                    {documentStatusLabel(doc.status)}
                   </span>
                 </td>
                 <td className="py-3 px-4">v{doc.version || 1}</td>

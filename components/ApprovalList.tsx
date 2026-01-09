@@ -6,6 +6,7 @@ import {
   approveDocument,
   rejectDocument,
 } from "@/lib/approvalService";
+import { priorityLabel, titleCase } from "@/lib/display";
 
 export default function ApprovalList() {
   const [approvals, setApprovals] = useState<any[]>([]);
@@ -92,14 +93,13 @@ export default function ApprovalList() {
             >
               <div className="flex-1">
                 <h3 className="font-medium">{approval.docId?.title}</h3>
-                <p className="text-sm text-gray-600">{approval.docId?.type}</p>
+                <p className="text-sm text-gray-600">{titleCase(approval.docId?.type || "")}</p>
                 <div className="flex items-center gap-2 mt-2">
                   <span
-                    className={`px-2 py-1 rounded text-xs font-medium ${
-                      priorityColor[approval.priority] || "bg-gray-100"
-                    }`}
+                    className={`px-2 py-1 rounded text-xs font-medium ${priorityColor[approval.priority] || "bg-gray-100"
+                      }`}
                   >
-                    {approval.priority}
+                    {priorityLabel(approval.priority)}
                   </span>
                   {approval.dueDate && (
                     <span className="text-xs text-gray-500">

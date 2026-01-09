@@ -4,6 +4,7 @@ import { useState } from "react";
 import * as AuditService from "@/lib/auditService";
 import Button from "@/components/Button";
 import { useModal } from "@/components/ModalProvider";
+import { auditActionLabel, shortId, titleCase } from "@/lib/display";
 
 export default function AuditLogViewer() {
   const { alert } = useModal();
@@ -129,8 +130,10 @@ export default function AuditLogViewer() {
                       {new Date(log.createdAt).toLocaleString()}
                     </td>
                     <td className="py-2 px-3">{log.user?.email || "System"}</td>
-                    <td className="py-2 px-3 font-medium">{log.action}</td>
-                    <td className="py-2 px-3">{log.resource}</td>
+                    <td className="py-2 px-3 font-medium">{auditActionLabel(log.action)}</td>
+                    <td className="py-2 px-3">
+                      {titleCase(log.resource)} {shortId(log.resourceId)}
+                    </td>
                     <td className="py-2 px-3 text-xs text-gray-600">
                       {JSON.stringify(log.changes || {}).slice(0, 50)}...
                     </td>

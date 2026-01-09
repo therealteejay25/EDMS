@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import * as WorkflowService from "@/lib/workflowService";
+import { titleCase, workflowTriggerLabel } from "@/lib/display";
 
 export default function WorkflowManager() {
   const [workflows, setWorkflows] = useState<any[]>([]);
@@ -146,14 +147,13 @@ export default function WorkflowManager() {
                   </p>
                   <div className="flex gap-2 mt-2">
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
-                      {workflow.trigger}
+                      {workflowTriggerLabel(workflow.trigger)}
                     </span>
                     <span
-                      className={`px-2 py-1 text-xs rounded ${
-                        workflow.enabled
+                      className={`px-2 py-1 text-xs rounded ${workflow.enabled
                           ? "bg-green-100 text-green-800"
                           : "bg-gray-100 text-gray-800"
-                      }`}
+                        }`}
                     >
                       {workflow.enabled ? "Enabled" : "Disabled"}
                     </span>
