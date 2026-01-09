@@ -5,6 +5,7 @@ import Card from "../../components/Card";
 import Button from "../../components/Button";
 import { listAuditLogs, exportAuditLog, AuditLog, formatDateTime } from "../../lib/apiClient";
 import { useModal } from "../../components/ModalProvider";
+import { auditActionLabel, shortId, titleCase } from "../../lib/display";
 
 export default function AuditPage() {
   const { alert } = useModal();
@@ -102,10 +103,10 @@ export default function AuditPage() {
                         {log.user?.name || "Unknown"}
                       </td>
                       <td className="px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">
-                        {log.action}
+                        {auditActionLabel(log.action)}
                       </td>
                       <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-                        {log.resource} {log.resourceId}
+                        {titleCase(log.resource)} {shortId(log.resourceId)}
                       </td>
                     </tr>
                   ))}

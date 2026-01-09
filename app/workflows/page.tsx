@@ -8,6 +8,7 @@ import Input from "../../components/Input";
 import Select from "../../components/Select";
 import { useModal } from "../../components/ModalProvider";
 import { listWorkflows, createWorkflow, updateWorkflow, deleteWorkflow, Workflow } from "../../lib/apiClient";
+import { workflowTriggerLabel } from "../../lib/display";
 
 const TRIGGER_OPTIONS = [
   { value: "document_type", label: "Document Type" },
@@ -170,7 +171,7 @@ export default function WorkflowsPage() {
                     </p>
                   )}
                   <div className="flex items-center gap-4 text-sm text-zinc-500 dark:text-zinc-400">
-                    <span>Trigger: {workflow.trigger}</span>
+                    <span>Trigger: {workflowTriggerLabel(workflow.trigger)}</span>
                     {workflow.triggerValue && <span>• {workflow.triggerValue}</span>}
                     <span>• {workflow.steps?.length || 0} steps</span>
                   </div>
@@ -203,7 +204,7 @@ export default function WorkflowsPage() {
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 required
               />
-              
+
               <Input
                 label="Description (optional)"
                 value={formData.description}

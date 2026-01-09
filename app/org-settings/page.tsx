@@ -19,6 +19,7 @@ import {
   removeDepartment,
   Workflow,
 } from "../../lib/apiClient";
+import { auditActionLabel, shortId, titleCase, workflowTriggerLabel } from "../../lib/display";
 
 interface AuditLog {
   _id: string;
@@ -257,19 +258,18 @@ export default function OrgSettingsPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`pb-3 text-sm font-medium ${
-                activeTab === tab
-                  ? "border-b-2 border-blue-600 text-blue-600"
-                  : "text-zinc-600 hover:text-zinc-900"
-              }`}
+              className={`pb-3 text-sm font-medium ${activeTab === tab
+                ? "border-b-2 border-blue-600 text-blue-600"
+                : "text-zinc-600 hover:text-zinc-900"
+                }`}
             >
               {tab === "workflows"
                 ? "Workflows"
                 : tab === "audit"
-                ? "Audit Logs"
-                : tab === "retention"
-                ? "Retention"
-                : "Departments"}
+                  ? "Audit Logs"
+                  : tab === "retention"
+                    ? "Retention"
+                    : "Departments"}
             </button>
           ))}
         </div>
@@ -316,15 +316,13 @@ export default function OrgSettingsPage() {
                     })
                   }
                   placeholder={
-                    newWorkflow.trigger === "document_type"
-                      ? "e.g., Policy"
-                      : "e.g., HR"
+                    newWorkflow.trigger === "document_type" ? "e.g., Policy" : "e.g., HR"
                   }
                 />
               )}
 
-              <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create Workflow"}
+              <Button type="submit" loading={loading} loadingText="Creating...">
+                Create Workflow
               </Button>
             </form>
           </Card>
@@ -342,17 +340,14 @@ export default function OrgSettingsPage() {
                     <div className="flex-1">
                       <h3 className="font-semibold">{wf.name}</h3>
                       <p className="text-sm text-zinc-600 mt-1">
-                        Trigger: {wf.trigger}
+                        Trigger: {workflowTriggerLabel(wf.trigger)}
                         {wf.triggerValue && ` - ${wf.triggerValue}`}
                       </p>
                       <p className="text-sm text-zinc-600">
                         Steps: {wf.steps.length}
                       </p>
                     </div>
-                    <Button
-                      variant="danger"
-                      onClick={() => handleDeleteWorkflow(wf._id)}
-                    >
+                    <Button variant="danger" onClick={() => handleDeleteWorkflow(wf._id)}>
                       Delete
                     </Button>
                   </div>
@@ -380,8 +375,10 @@ export default function OrgSettingsPage() {
                     className="flex items-start justify-between border-b border-zinc-200 pb-3 last:border-0"
                   >
                     <div className="flex-1">
-                      <p className="font-semibold">{log.action}</p>
-                      <p className="text-sm text-zinc-600">{log.resource}</p>
+                      <p className="font-semibold">{auditActionLabel(log.action)}</p>
+                      <p className="text-sm text-zinc-600">
+                        {titleCase(log.resource)} {shortId((log as any).resourceId)}
+                      </p>
                       <p className="text-xs text-zinc-500">
                         {log.user.name} - {formatDateTime(log.createdAt)}
                       </p>

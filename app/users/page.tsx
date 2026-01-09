@@ -9,6 +9,7 @@ import Select from "../../components/Select";
 import { useModal } from "../../components/ModalProvider";
 import { listUsers, createUser, updateUser, deleteUser, User } from "../../lib/userService";
 import { listDepartments } from "../../lib/apiClient";
+import { roleLabel } from "../../lib/display";
 
 const ROLES = [
   { value: "user", label: "User" },
@@ -195,11 +196,11 @@ export default function UsersPage() {
                     <td className="px-6 py-4 text-sm text-zinc-900 dark:text-zinc-100">{user.email}</td>
                     <td className="px-6 py-4">
                       <Badge variant={user.role === "admin" ? "danger" : user.role === "department_lead" ? "warning" : "default"}>
-                        {user.role}
+                        {roleLabel(user.role)}
                       </Badge>
                     </td>
                     <td className="px-6 py-4 text-sm text-zinc-500 dark:text-zinc-400">
-                      {user.department || "N/A"}
+                      {user.department || "No department"}
                     </td>
                     <td className="px-6 py-4">
                       <Badge variant={user.isActive ? "success" : "default"}>

@@ -14,6 +14,7 @@ import {
   getBadgeVariant,
   listDepartments,
 } from "../../lib/apiClient";
+import { documentStatusLabel, titleCase } from "../../lib/display";
 import Link from "next/link";
 
 const DOCUMENT_TYPES = [
@@ -298,14 +299,14 @@ export default function DocumentsPage() {
                         )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
-                        {doc.type}
+                        {titleCase(doc.type)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-900 dark:text-zinc-100">
                         {doc.department}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge variant={getBadgeVariant(doc.status)}>
-                          {doc.status}
+                          {documentStatusLabel(doc.status)}
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-zinc-500 dark:text-zinc-400">

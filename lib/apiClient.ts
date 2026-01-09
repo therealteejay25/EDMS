@@ -580,6 +580,8 @@ export interface User {
   role: "admin" | "department_lead" | "user";
   department?: string;
   org: string;
+  orgs?: string[];
+  activeOrg?: string;
 }
 
 export async function getCurrentUser(): Promise<User> {
@@ -598,6 +600,30 @@ export async function logout(): Promise<void> {
   } finally {
     client.clearCache();
   }
+}
+
+export interface AuthOrg {
+  _id: string;
+  name: string;
+}
+
+export async function listAuthOrgs(): Promise<AuthOrg[]> {
+  const result: any = await client.request("/auth/orgs", { skipCache: true });
+  const orgs = result?.orgs;
+  return Array.isArray(orgs) ? orgs : [];
+}
+
+export async function switchOrg(orgId: string): Promise<User> {
+  if (!orgId) throw new Error("orgId is required");
+  client.clearCache();
+  await client.request("/auth/switch-org", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ orgId }),
+    skipCache: true,
+  });
+  client.clearCache();
+  return getCurrentUser();
 }
 
 // ===================== Integrations (Zoho) =====================

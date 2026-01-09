@@ -11,6 +11,7 @@ import {
   escalateApproval,
   formatDateTime,
 } from "../../lib/apiClient";
+import { approvalStatusLabel, priorityLabel, titleCase } from "../../lib/display";
 
 interface Approval {
   _id: string;
@@ -174,14 +175,14 @@ export default function ApprovalsPage() {
                   </div>
                   <div className="flex gap-2">
                     <Badge variant={getPriorityColor(approval.priority)}>
-                      {approval.priority.toUpperCase()}
+                      {priorityLabel(approval.priority) || titleCase(approval.priority)}
                     </Badge>
                     <Badge
                       variant={
                         approval.status === "pending" ? "warning" : "success"
                       }
                     >
-                      {approval.status}
+                      {approvalStatusLabel(approval.status)}
                     </Badge>
                   </div>
                 </div>

@@ -22,6 +22,7 @@ import {
   getBadgeVariant,
   getCurrentUser,
 } from "../../../lib/apiClient";
+import { documentStatusLabel, roleLabel, titleCase } from "../../../lib/display";
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace("/api", "") ||
@@ -158,7 +159,7 @@ export default function DocumentDetailPage() {
 
   const handleRequestApproval = async () => {
     if (!user) return;
-    const assignee = prompt("Enter user ID or email to assign approval:");
+    const assignee = prompt("Assign approval to (email or user ID):");
     if (!assignee) return;
 
     try {
@@ -178,7 +179,7 @@ export default function DocumentDetailPage() {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
-        <div className="loader"></div>
+          <div className="loader"></div>
           <p className="mt-4 text-sm text-zinc-600 dark:text-zinc-400">
             Loading document...
           </p>
@@ -224,7 +225,7 @@ export default function DocumentDetailPage() {
               </h1>
               <div className="mt-2 flex items-center gap-2 flex-wrap">
                 <Badge variant={getBadgeVariant(doc.status)}>
-                  {doc.status}
+                  {documentStatusLabel(doc.status)}
                 </Badge>
                 {doc.legalHold && <Badge variant="danger">Legal Hold</Badge>}
                 {doc.approvalRequired && (
@@ -300,11 +301,10 @@ export default function DocumentDetailPage() {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                activeTab === tab
+              className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab
                   ? "border-primary-500 text-primary-600 dark:text-primary-400"
                   : "border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-300 hover:border-zinc-300 dark:hover:border-zinc-600"
-              }`}
+                }`}
             >
               {tab.charAt(0).toUpperCase() + tab.slice(1)}
             </button>

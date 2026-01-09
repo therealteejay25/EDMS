@@ -3,12 +3,16 @@ import React, { useEffect, useState } from "react";
 import Card from "../../components/Card";
 import Button from "../../components/Button";
 import { useRouter } from "next/navigation";
+import { listAuthOrgs } from "../../lib/apiClient";
 
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [orgs, setOrgs] = useState<Array<{ _id: string; name: string }>>([]);
+  const [selectedOrgId, setSelectedOrgId] = useState<string>("");
+  const [newOrgName, setNewOrgName] = useState<string>("");
 
   useEffect(() => {
     // check session with backend
@@ -35,9 +39,32 @@ export default function LoginPage() {
     check();
   }, [router]);
 
+  useEffect(() => {
+    const loadOrgs = async () => {
+      try {
+        const data = await listAuthOrgs();
+        setOrgs(data);
+        if (data.length && !selectedOrgId) {
+          setSelectedOrgId(data[0]._id);
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    loadOrgs();
+  }, [selectedOrgId]);
+
   function startZoho() {
     const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api";
-    window.location.assign(`${API}/auth/zoho/start`);
+    const orgName = newOrgName.trim();
+    const qs = new URLSearchParams();
+    if (orgName) {
+      qs.set("orgName", orgName);
+    } else if (selectedOrgId) {
+      qs.set("orgId", selectedOrgId);
+    }
+    const suffix = qs.toString() ? `?${qs.toString()}` : "";
+    window.location.assign(`${API}/auth/zoho/start${suffix}`);
   }
 
   return (
@@ -47,6 +74,32 @@ export default function LoginPage() {
         <div className="flex flex-col gap-8">
           <div className="text-sm text-zinc-600">
             Sign in using Zoho SSO for your organization.
+          </div>
+          <div className="flex flex-col gap-2">
+            <div className="text-sm font-medium text-zinc-700">
+              Organization
+            </div>
+            <select
+              className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
+              value={selectedOrgId}
+              onChange={(e) => {
+                setSelectedOrgId(e.target.value);
+                setNewOrgName("");
+              }}
+            >
+              {orgs.map((o) => (
+                <option key={o._id} value={o._id}>
+                  {o.name}
+                </option>
+              ))}
+            </select>
+            <div className="text-xs text-zinc-500">Or create a new org</div>
+            <input
+              className="w-full rounded-md border border-zinc-200 bg-white px-3 py-2 text-sm"
+              placeholder="New organization name"
+              value={newOrgName}
+              onChange={(e) => setNewOrgName(e.target.value)}
+            />
           </div>
           {error ? <div className="text-sm text-rose-600">{error}</div> : null}
           <div className="flex w-full">
